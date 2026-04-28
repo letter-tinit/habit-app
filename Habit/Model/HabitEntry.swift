@@ -1,0 +1,60 @@
+import Foundation
+import SwiftData
+
+// MARK: - HabitEntry (Daily Log)
+// One record per habit per calendar day.
+
+@Model
+final class HabitEntry {
+    var id: UUID
+    var date: Date              // Normalised to midnight (start of day) for easy querying
+    var completedCount: Int     // 0 = not done; ≥ goalCount = fully done
+    var note: String            // Optional journal note for that day
+    var mood: MoodRating?       // Optional mood tag
+    var createdAt: Date
+    var updatedAt: Date
+
+    // Relationship back to the parent Habit
+    var habit: Habit?
+
+    // MARK: - Computed helpers (not persisted)
+    var isCompleted: Bool {
+        guard let habit else { return false }
+        return completedCount >= habit.goalCount
+    }
+
+    var completionRatio: Double {
+        guard let habit, habit.goalCount > 0 else { return 0 }
+        return min(Double(completedCount) / Double(habit.goalCount), 1.0)
+    }
+
+    // MARK: - Init
+    init(date: Date, completedCount: Int = 0, note: String = "") {
+        self.id = UUID()
+        self.date = Calendar.current.startOfDay(for: date)
+        self.completedCount = completedCount
+        self.note = note
+        self.createdAt = Date()
+        self.updatedAt = Date()
+    }
+}
+
+// MARK: - MoodRating
+
+enum MoodRating: Int, Codable, CaseIterable {
+    case terrible = 1
+    case bad      = 2
+    case neutral  = 3
+    case good     = 4
+    case great    = 5
+
+    var emoji: String {
+        switch self {
+        case .terrible: return "😞"
+        case .bad:      return "😕"
+        case .neutral:  return "😐"
+        case .good:     return "🙂"
+        case .great:    return "😄"
+        }
+    }
+}
