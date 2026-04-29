@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct HabitDetailScreen: View {
-    @Binding var habit: Habit
+    @Environment(HabitStore.self) private var habitStore
     @FocusState private var isFocused: Bool
     private var focusBinding: Binding<Bool> {
         Binding(
@@ -17,12 +17,38 @@ struct HabitDetailScreen: View {
         )
     }
     var body: some View {
+        @Bindable var habit = habitStore.selectedHabit
+        let originalEmoji = habit.emoji
         BaseScreen($habit.name, isFocused: focusBinding) {
-            
+            VStack {
+                Button {
+                    baseAnimation {
+                        isFocused = true
+                    }
+                } label: {
+                    Text(habit.emoji)
+                        .font(.headline)
+                }
+                
+                TextField("", text: $habit.emoji)
+                    .frame(height: 0)
+                    .opacity(0)
+                    .focused($isFocused)
+                    .keyboardType(.emoji ?? .default)
+                    .onChange(of: habit.emoji) { _, newValue in
+                        if let last = newValue.last, last.isEmoji {
+                            habit.emoji = String(last)
+                        } else {
+                            habit.emoji = originalEmoji
+                        }
+                    }
+                
+                Spacer()
+            }
         }
     }
 }
 
 #Preview {
-    HabitDetailScreen(habit: .constant(.mock))
+    HabitDetailScreen()
 }

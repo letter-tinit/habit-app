@@ -13,21 +13,31 @@ enum AppTab: String {
     var symbolImage: String {
         return switch self {
         case .home:
-            "house"
+            "figure.run"
         }
     }
 }
 
 struct MainTabScreen: View {
     @State private var activeTab: AppTab = .home
+    @State private var homeRouter = HomeRouter()
     
     var body: some View {
         TabView(selection: $activeTab) {
-            Tab(AppTab.home.rawValue, systemImage: AppTab.home.symbolImage, value: .home) {
-                NavigationStack {
+            Tab(value: AppTab.home) {
+                AppNavigationStack(path: $homeRouter.path) {
                     HomeScreen()
+                        .environment(homeRouter)
+                } destination: { route in
+                    switch route {
+                    case .habitDetail:
+                        HabitDetailScreen()
+                    }
                 }
+            } label: {
+                Image(systemName: AppTab.home.symbolImage)
             }
+
         }
     }
 }

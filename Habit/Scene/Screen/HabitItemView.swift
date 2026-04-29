@@ -8,11 +8,13 @@
 import SwiftUI
 
 struct HabitItemView: View {
-    let habit: Habit
-    @Binding var progress: CGFloat
-    
+    @Environment(HomeRouter.self) private var router
+    @Environment(HabitStore.self) private var habitStore
+
+    @Binding var habit: Habit
     private let cornerRadius: CGFloat = 12.0
     var body: some View {
+        let entry = habit.entry(for: Date())
         ZStack {
             Color.init(hex: habit.colorHex).opacity(0.35)
                 .clipShape(
@@ -23,10 +25,11 @@ struct HabitItemView: View {
                         topTrailingRadius: 0
                     )
                 )
-                .scaleEffect(x: progress, y: 1, anchor: .leading)
+                .scaleEffect(x: entry?.completionRatio ?? 0.0, y: 1, anchor: .leading)
             
             Button {
-                print("B")
+                habitStore.selectedHabit = habit
+                router.push(.habitDetail)
             } label: {
                 HStack {
                     Text(habit.emoji)
@@ -45,11 +48,11 @@ struct HabitItemView: View {
         }
         .overlay(alignment: .trailing) {
             Button {
-                if progress < 1 {
-                    baseAnimation {
-                        progress += 0.2
-                    }
-                }
+//                if progress < 1 {
+//                    baseAnimation {
+//                        progress += 0.2
+//                    }
+//                }
             } label: {
                 Image(systemName: "plus")
                     .fontWeight(.bold)
@@ -65,7 +68,7 @@ struct HabitItemView: View {
             )
             .padding(.horizontal, 10)
             .shadow(color: .black.opacity(0.3), radius: 1)
-            .opacity(progress == 1 ? 0 : 1)
+//            .opacity(progress == 1 ? 0 : 1)
         }
         .mask {
             RoundedRectangle(cornerRadius: cornerRadius)
@@ -79,5 +82,5 @@ struct HabitItemView: View {
 }
 
 #Preview {
-    HabitItemView(habit: .mock, progress: .constant(0.5))
+    HabitItemView(habit: .constant(.mock))
 }

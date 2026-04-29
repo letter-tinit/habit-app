@@ -12,4 +12,5 @@ final class HabitStore {
     // MARK: - HOMESREEN
     var homeTitle: String = "TODAY"
     var habits: [Habit] = Habit.mocks
+    var selectedHabit: Habit = .mock
 }

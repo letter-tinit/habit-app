@@ -86,8 +86,19 @@ enum GoalType: String, Codable {
 }
 
 extension Habit {
+    func entry(for date: Date) -> HabitEntry? {
+        let targetDate = Calendar.current.startOfDay(for: date)
+        
+        return entries.first {
+            Calendar.current.isDate($0.date, inSameDayAs: targetDate)
+        }
+    }
+}
+
+extension Habit {
+    
     static var mock: Habit {
-        Habit(
+        let habit = Habit(
             name: "Drink Water",
             emoji: "💧",
             description: "Drink enough water daily to stay hydrated",
@@ -99,69 +110,130 @@ extension Habit {
             goalCount: 8,
             goalUnit: "glasses"
         )
+        
+        let todayEntry = HabitEntry(
+            date: Date(),
+            completedCount: 5,
+            note: "Good hydration progress today"
+        )
+        todayEntry.habit = habit
+        
+        habit.entries = [todayEntry]
+        habit.currentStreak = 3
+        habit.longestStreak = 7
+        habit.lastCompletedDate = Date()
+        
+        return habit
     }
     
     static var mocks: [Habit] {
-        [
-            Habit(
-                name: "Drink Water",
-                emoji: "💧",
-                description: "Drink enough water daily",
-                icon: "drop.fill",
-                colorHex: "#4ECDC4",
-                frequency: .daily,
-                goalType: .count,
-                goalCount: 8,
-                goalUnit: "glasses"
-            ),
-            
-            Habit(
-                name: "Read Books",
-                emoji: "📚",
-                description: "Read self-development or technical books",
-                icon: "book.fill",
-                colorHex: "#FF6B6B",
-                frequency: .daily,
-                goalType: .count,
-                goalCount: 30,
-                goalUnit: "pages"
-            ),
-            
-            Habit(
-                name: "Exercise",
-                emoji: "🏃‍♀️",
-                description: "Workout or light exercise",
-                icon: "figure.walk",
-                colorHex: "#FFD93D",
-                frequency: .weekday,
-                goalType: .count,
-                goalCount: 30,
-                goalUnit: "minutes"
-            ),
-            
-            Habit(
-                name: "Practice English",
-                emoji: "🏋️",
-                description: "Practice reading or speaking English",
-                icon: "globe",
-                colorHex: "#6C5CE7",
-                frequency: .daily,
-                goalType: .count,
-                goalCount: 30,
-                goalUnit: "minutes"
-            ),
-            
-            Habit(
-                name: "Meditation",
-                emoji: "🧘",
-                description: "Mindfulness and focus practice",
-                icon: "brain.head.profile",
-                colorHex: "#A8E6CF",
-                frequency: .weekend,
-                goalType: .count,
-                goalCount: 15,
-                goalUnit: "minutes"
-            )
+        let calendar = Calendar.current
+        let today = Date()
+        
+        func makeEntries(
+            for habit: Habit,
+            dailyCounts: [Int]
+        ) -> [HabitEntry] {
+            dailyCounts.enumerated().map { index, count in
+                let date = calendar.date(byAdding: .day, value: -index, to: today)!
+                let entry = HabitEntry(
+                    date: date,
+                    completedCount: count,
+                    note: count > 0 ? "Progress recorded" : ""
+                )
+                entry.habit = habit
+                return entry
+            }
+        }
+        
+        let water = Habit(
+            name: "Drink Water",
+            emoji: "💧",
+            description: "Drink enough water daily",
+            icon: "drop.fill",
+            colorHex: "#4ECDC4",
+            frequency: .daily,
+            goalType: .count,
+            goalCount: 8,
+            goalUnit: "glasses"
+        )
+        water.entries = makeEntries(for: water, dailyCounts: [8, 7, 8, 6, 8, 6, 8])
+        water.currentStreak = 3
+        water.longestStreak = 10
+        water.lastCompletedDate = today
+        
+        let reading = Habit(
+            name: "Read Books",
+            emoji: "📚",
+            description: "Read self-development or technical books",
+            icon: "book.fill",
+            colorHex: "#FF6B6B",
+            frequency: .daily,
+            goalType: .count,
+            goalCount: 90,
+            goalUnit: "pages"
+        )
+        reading.entries = makeEntries(for: reading, dailyCounts: [30, 9, 40, 30, 20, 30, 20])
+        reading.currentStreak = 2
+        reading.longestStreak = 12
+        reading.lastCompletedDate = today
+        
+        let exercise = Habit(
+            name: "Exercise",
+            emoji: "🏃‍♀️",
+            description: "Workout or light exercise",
+            icon: "figure.walk",
+            colorHex: "#FFD93D",
+            frequency: .weekday,
+            targetDaysOfWeek: [1,2,3,4,5],
+            goalType: .count,
+            goalCount: 30,
+            goalUnit: "minutes"
+        )
+        exercise.entries = makeEntries(for: exercise, dailyCounts: [20, 30, 20, 30, 0, 30, 0])
+        exercise.currentStreak = 2
+        exercise.longestStreak = 8
+        exercise.lastCompletedDate = today
+        
+        let english = Habit(
+            name: "Practice English",
+            emoji: "🇬🇧",
+            description: "Practice reading or speaking English",
+            icon: "globe",
+            colorHex: "#6C5CE7",
+            frequency: .daily,
+            goalType: .count,
+            goalCount: 30,
+            goalUnit: "minutes"
+        )
+        english.entries = makeEntries(for: english, dailyCounts: [30, 35, 30, 25, 30, 25, 30])
+        english.currentStreak = 3
+        english.longestStreak = 15
+        english.lastCompletedDate = today
+        
+        let meditation = Habit(
+            name: "Meditation",
+            emoji: "🧘",
+            description: "Mindfulness and focus practice",
+            icon: "brain.head.profile",
+            colorHex: "#A8E6CF",
+            frequency: .weekend,
+            targetDaysOfWeek: [0,6],
+            goalType: .count,
+            goalCount: 15,
+            goalUnit: "minutes"
+        )
+        meditation.entries = makeEntries(for: meditation, dailyCounts: [15, 10, 15])
+        meditation.currentStreak = 1
+        meditation.longestStreak = 5
+        meditation.lastCompletedDate = today
+        
+        return [
+            water,
+            reading,
+            exercise,
+            english,
+            meditation
         ]
     }
 }
