@@ -34,4 +34,6 @@ struct MainTabScreen: View {
 
 #Preview {
     MainTabScreen()
+        .tint(.black)
+        .environment(HabitStore())
 }

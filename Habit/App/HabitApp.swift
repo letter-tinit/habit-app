@@ -12,6 +12,8 @@ struct HabitApp: App {
     var body: some Scene {
         WindowGroup {
             MainTabScreen()
+                .tint(.black)
+                .environment(HabitStore())
         }
     }
 }

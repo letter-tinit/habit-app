@@ -7,6 +7,7 @@ import SwiftData
 final class Habit {
     var id: UUID
     var name: String
+    var emoji: String
     var habitDescription: String
     var icon: String           // SF Symbol name, e.g. "drop.fill"
     var colorHex: String       // e.g. "#FF6B6B"
@@ -40,6 +41,7 @@ final class Habit {
     // MARK: - Init
     init(
         name: String,
+        emoji: String,
         description: String = "",
         icon: String = "star.fill",
         colorHex: String = "#4ECDC4",
@@ -51,6 +53,7 @@ final class Habit {
     ) {
         self.id = UUID()
         self.name = name
+        self.emoji = emoji
         self.habitDescription = description
         self.icon = icon
         self.colorHex = colorHex
@@ -70,12 +73,95 @@ final class Habit {
 // MARK: - Enums
 
 enum HabitFrequency: String, Codable {
-    case daily          // every day
-    case weekly         // specific days of week
+    case daily
+    case weekday      // Monday to Friday
+    case weekly         // Same day per week
+    case weekend        // Saturday and Sunday
     case custom         // N days per week/month
 }
 
 enum GoalType: String, Codable {
     case boolean        // simply completed or not
     case count          // e.g. drink 8 glasses of water
+}
+
+extension Habit {
+    static var mock: Habit {
+        Habit(
+            name: "Drink Water",
+            emoji: "💧",
+            description: "Drink enough water daily to stay hydrated",
+            icon: "drop.fill",
+            colorHex: "#4ECDC4",
+            frequency: .daily,
+            targetDaysOfWeek: [],
+            goalType: .count,
+            goalCount: 8,
+            goalUnit: "glasses"
+        )
+    }
+    
+    static var mocks: [Habit] {
+        [
+            Habit(
+                name: "Drink Water",
+                emoji: "💧",
+                description: "Drink enough water daily",
+                icon: "drop.fill",
+                colorHex: "#4ECDC4",
+                frequency: .daily,
+                goalType: .count,
+                goalCount: 8,
+                goalUnit: "glasses"
+            ),
+            
+            Habit(
+                name: "Read Books",
+                emoji: "📚",
+                description: "Read self-development or technical books",
+                icon: "book.fill",
+                colorHex: "#FF6B6B",
+                frequency: .daily,
+                goalType: .count,
+                goalCount: 30,
+                goalUnit: "pages"
+            ),
+            
+            Habit(
+                name: "Exercise",
+                emoji: "🏃‍♀️",
+                description: "Workout or light exercise",
+                icon: "figure.walk",
+                colorHex: "#FFD93D",
+                frequency: .weekday,
+                goalType: .count,
+                goalCount: 30,
+                goalUnit: "minutes"
+            ),
+            
+            Habit(
+                name: "Practice English",
+                emoji: "🏋️",
+                description: "Practice reading or speaking English",
+                icon: "globe",
+                colorHex: "#6C5CE7",
+                frequency: .daily,
+                goalType: .count,
+                goalCount: 30,
+                goalUnit: "minutes"
+            ),
+            
+            Habit(
+                name: "Meditation",
+                emoji: "🧘",
+                description: "Mindfulness and focus practice",
+                icon: "brain.head.profile",
+                colorHex: "#A8E6CF",
+                frequency: .weekend,
+                goalType: .count,
+                goalCount: 15,
+                goalUnit: "minutes"
+            )
+        ]
+    }
 }
