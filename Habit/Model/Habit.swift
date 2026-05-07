@@ -173,7 +173,7 @@ extension Habit {
             goalCount: 90,
             goalUnit: "pages"
         )
-        reading.entries = makeEntries(for: reading, dailyCounts: [30, 9, 40, 30, 20, 30, 20])
+        reading.entries = makeEntries(for: reading, dailyCounts: [30, 9, 90, 30, 20, 30, 20])
         reading.currentStreak = 2
         reading.longestStreak = 12
         reading.lastCompletedDate = today
@@ -190,7 +190,7 @@ extension Habit {
             goalCount: 30,
             goalUnit: "minutes"
         )
-        exercise.entries = makeEntries(for: exercise, dailyCounts: [20, 30, 20, 30, 0, 30, 0])
+        exercise.entries = makeEntries(for: exercise, dailyCounts: [20, 30, 30, 30, 0, 30, 0])
         exercise.currentStreak = 2
         exercise.longestStreak = 8
         exercise.lastCompletedDate = today

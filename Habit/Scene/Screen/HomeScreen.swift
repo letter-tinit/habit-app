@@ -8,26 +8,38 @@
 import SwiftUI
 
 struct HomeScreen: View {
+    @State private var progress = 0.6
     @Environment(HabitStore.self) private var habitStore
     
     var body: some View {
         @Bindable var habitStore = habitStore
         BaseScreen($habitStore.homeTitle) {
-            AppList {
-                ForEach($habitStore.habits, id: \.self) { $habit in
-                    HabitItemView(habit: $habit)
-                        .listRowInsets(EdgeInsets(top: 16, leading: 16, bottom: 0, trailing: 16))
-                        .swipeActions {
-                            Button(role: .destructive) {
-                                print("Delete")
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
+            VStack(spacing: 0) {
+                WeekView()
+                    .padding(.horizontal)
+
+                AppList {
+                    ForEach($habitStore.habits.enumerated(), id: \.element.id) { index, $habit in
+                        if index == 0 {
+                            Color.clear
+                                .frame(height: 0)
                         }
+
+                        HabitItemView(habit: $habit)
+                            .padding(.horizontal)
+                            .swipeActions {
+                                Button {
+                                } label: {
+                                    Image(systemName: "arrow.counterclockwise")
+                                        .tint(.skyBlue)
+                                }
+                            }
+                    }
                 }
+                .offset(y: -50)
+                .listRowSpacing(20)
+                // MARK: - List Configure
             }
-            // MARK: - List Configure
-            .lineSpacing(.zero)
             
         }
         // MARK: - BaseScreen Configure

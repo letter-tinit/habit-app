@@ -31,9 +31,11 @@ struct AppList<Content: View>: View {
     var body: some View {
         List {
             content
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
         }
         .listStyle(.plain)
+        .scrollBounceBehavior(.basedOnSize)
     }
 }

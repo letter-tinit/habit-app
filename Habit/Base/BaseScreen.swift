@@ -75,7 +75,7 @@ struct BaseScreen<Content: View>: View {
     
     init(
         _ title: Binding<String>,
-        backgroundType: BackgroundGradientType = .lightPink,
+        backgroundType: BackgroundGradientType = .cyan,
         isFocused: Binding<Bool> = .constant(false),
         @ViewBuilder content: @escaping () -> Content
     ) {

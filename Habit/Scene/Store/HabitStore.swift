@@ -6,6 +6,7 @@
 //
 
 import Observation
+import Foundation
 
 @Observable
 final class HabitStore {
@@ -13,4 +14,10 @@ final class HabitStore {
     var homeTitle: String = "TODAY"
     var habits: [Habit] = Habit.mocks
     var selectedHabit: Habit = .mock
+    private(set) var selectedDate: Date = Date()
+    
+    
+    func didChangeSelecteDate(_ date: Date) {
+        selectedDate = date
+    }
 }

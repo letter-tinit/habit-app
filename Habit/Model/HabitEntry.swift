@@ -39,6 +39,16 @@ final class HabitEntry {
     }
 }
 
+extension HabitEntry {
+    func entry(for date: Date, in entries: [HabitEntry]) -> HabitEntry? {
+        let targetDate = Calendar.current.startOfDay(for: date)
+        
+        return entries.first {
+            Calendar.current.isDate($0.date, inSameDayAs: targetDate)
+        }
+    }
+}
+
 // MARK: - MoodRating
 
 enum MoodRating: Int, Codable, CaseIterable {
