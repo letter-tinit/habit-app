@@ -15,98 +15,99 @@ struct HabitItemView: View {
     @Binding var habit: Habit
     private let cornerRadius: CGFloat = 12.0
     var body: some View {
-        if let entry = habit.entry(for: habitStore.selectedDate) {
-            ZStack {
-                Color.init(hex: habit.colorHex).opacity(0.35)
-                    .clipShape(
-                        .rect(
-                            topLeadingRadius: cornerRadius,
-                            bottomLeadingRadius: cornerRadius,
-                            bottomTrailingRadius: 0,
-                            topTrailingRadius: 0
-                        )
+        let entry = habit.entry(for: habitStore.selectedDate)
+        let completedCount = entry?.completedCount ?? 0
+        let completionRatio = entry?.completionRatio ?? 0
+
+        ZStack {
+            Color.init(hex: habit.colorHex).opacity(0.35)
+                .clipShape(
+                    .rect(
+                        topLeadingRadius: cornerRadius,
+                        bottomLeadingRadius: cornerRadius,
+                        bottomTrailingRadius: 0,
+                        topTrailingRadius: 0
                     )
-                    .scaleEffect(x: entry.completionRatio, y: 1, anchor: .leading)
-                
-                Button {
-                    logDebug("Select habit")
-                    habitStore.selectedHabit = habit
-                    router.push(.habitDetail)
-                } label: {
-                    HStack {
-                        Text(habit.emoji)
-                            .padding(5)
-                            .background()
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
-                        
-                        VStack(alignment: .leading) {
-                            Text(habit.name)
-                                .font(.headline)
-                                .fontDesign(.rounded)
-                            
-                            Text("\(entry.completedCount)/\(habit.goalCount) \(habit.goalUnit)")
-                                .font(.caption2)
-                                .fontDesign(.rounded)
-                                .fontWeight(.regular)
-                                .padding(.horizontal, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 3)
-                                        .stroke(lineWidth: 0.4)
-                                )
-                        }
-                        
-                        Spacer()
-                    }
-                }
-                .padding()
-            }
-            .overlay(alignment: .trailing) {
-                Button {
-                    logDebug("plus")
-                    baseAnimation {
-                        showNumberPad = true
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                        .fontWeight(.bold)
-                        .fontDesign(.rounded)
-                }
-                .padding(8)
-                .buttonStyle(.plain)
-                .sensoryFeedback(.impact(weight: .medium), trigger: showNumberPad)
-                .glassEffect(
-                    .regular
-                        .interactive(),
-                    in: .circle
                 )
-                .padding(.horizontal, 10)
-                .shadow(color: .black.opacity(0.3), radius: 1)
-                //            .opacity(progress == 1 ? 0 : 1)
+                .scaleEffect(x: completionRatio, y: 1, anchor: .leading)
+            
+            Button {
+                logDebug("Select habit")
+                habitStore.selectedHabit = habit
+                router.push(.habitDetail)
+            } label: {
+                HStack {
+                    Text(habit.emoji)
+                        .padding(5)
+                        .background()
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    
+                    VStack(alignment: .leading) {
+                        Text(habit.name)
+                            .font(.headline)
+                            .fontDesign(.rounded)
+                        
+                        Text("\(completedCount)/\(habit.goalCount) \(habit.goalUnit)")
+                            .font(.caption2)
+                            .fontDesign(.rounded)
+                            .fontWeight(.regular)
+                            .padding(.horizontal, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .stroke(lineWidth: 0.4)
+                            )
+                    }
+                    
+                    Spacer()
+                }
             }
-            .mask {
-                RoundedRectangle(cornerRadius: cornerRadius)
+            .padding()
+        }
+        .overlay(alignment: .trailing) {
+            Button {
+                logDebug("plus")
+                baseAnimation {
+                    showNumberPad = true
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .fontWeight(.bold)
+                    .fontDesign(.rounded)
             }
+            .padding(8)
+            .buttonStyle(.plain)
+            .sensoryFeedback(.impact(weight: .medium), trigger: showNumberPad)
             .glassEffect(
                 .regular
                     .interactive(),
-                in: .rect(cornerRadius: cornerRadius)
+                in: .circle
             )
-            .sheet(isPresented: $showNumberPad) {
-                NumberPadSheet(
-                    habitName: habit.name,
-                    unit: habit.goalUnit,
-                    current: entry.completedCount,
-                    goal: habit.goalCount
-                ) { value in
-                    baseAnimation {
-                        entry.completedCount += value
-                    }
+            .padding(.horizontal, 10)
+            .shadow(color: .black.opacity(0.3), radius: 1)
+            //            .opacity(progress == 1 ? 0 : 1)
+        }
+        .mask {
+            RoundedRectangle(cornerRadius: cornerRadius)
+        }
+        .glassEffect(
+            .regular
+                .interactive(),
+            in: .rect(cornerRadius: cornerRadius)
+        )
+        .sheet(isPresented: $showNumberPad) {
+            NumberPadSheet(
+                habitName: habit.name,
+                unit: habit.goalUnit,
+                current: completedCount,
+                goal: habit.goalCount
+            ) { value in
+                baseAnimation {
+                    let newCount = completedCount + value
+                    habitStore.updateHabitEntry(habit, date: habitStore.selectedDate, completedCount: newCount)
                 }
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
             }
-        } else {
-            EmptyView()
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
     }
 }

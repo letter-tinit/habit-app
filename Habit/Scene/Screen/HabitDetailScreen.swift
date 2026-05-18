@@ -9,6 +9,20 @@ import SwiftUI
 
 struct HabitDetailScreen: View {
     @Environment(HabitStore.self) private var habitStore
+
+    var body: some View {
+        Group {
+            if let habit = habitStore.selectedHabit {
+                HabitDetailContent(habit: habit)
+            } else {
+                Text("No habit selected")
+            }
+        }
+    }
+}
+
+struct HabitDetailContent: View {
+    @Bindable var habit: Habit
     @FocusState private var isFocused: Bool
     private var focusBinding: Binding<Bool> {
         Binding(
@@ -16,8 +30,8 @@ struct HabitDetailScreen: View {
             set: { isFocused = $0 }
         )
     }
+
     var body: some View {
-        @Bindable var habit = habitStore.selectedHabit
         let originalEmoji = habit.emoji
         BaseScreen($habit.name, isFocused: focusBinding) {
             VStack {
@@ -29,7 +43,7 @@ struct HabitDetailScreen: View {
                     Text(habit.emoji)
                         .font(.headline)
                 }
-                
+
                 TextField("", text: $habit.emoji)
                     .frame(height: 0)
                     .opacity(0)
@@ -42,7 +56,7 @@ struct HabitDetailScreen: View {
                             habit.emoji = originalEmoji
                         }
                     }
-                
+
                 Spacer()
             }
         }

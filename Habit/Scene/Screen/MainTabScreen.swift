@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 enum AppTab: String {
     case home = "Home"
@@ -43,7 +44,14 @@ struct MainTabScreen: View {
 }
 
 #Preview {
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(
+        for: Habit.self, HabitEntry.self, HabitCategory.self, HabitReminder.self, UserProfile.self,
+        configurations: config
+    )
+
     MainTabScreen()
         .tint(.black)
-        .environment(HabitStore())
+        .modelContainer(container)
+        .environment(HabitStore(modelContext: container.mainContext))
 }

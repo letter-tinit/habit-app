@@ -59,7 +59,8 @@ struct HomeScreen: View {
             
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    
+                    let habit = Habit(name: "New Habit", emoji: "⭐")
+                    habitStore.addHabit(habit)
                 } label: {
                     Image(systemName: "plus")
                 }
