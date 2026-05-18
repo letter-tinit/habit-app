@@ -22,6 +22,8 @@ struct HabitDetailScreen: View {
 }
 
 struct HabitDetailContent: View {
+    @Environment(HabitStore.self) private var habitStore
+    @Environment(\.dismiss) private var dismiss
     @Bindable var habit: Habit
     @FocusState private var isFocused: Bool
     private var focusBinding: Binding<Bool> {
@@ -58,6 +60,20 @@ struct HabitDetailContent: View {
                     }
 
                 Spacer()
+            }
+        }
+        // MARK: - ToolBar
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    baseAnimation {
+                        if habitStore.deleteSelectedHabit() {
+                            dismiss()
+                        }
+                    }
+                } label: {
+                    Image(systemName: "trash")
+                }
             }
         }
     }

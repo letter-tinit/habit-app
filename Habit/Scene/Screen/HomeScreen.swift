@@ -20,27 +20,25 @@ struct HomeScreen: View {
 
                 AppList {
                     ForEach($habitStore.habits.enumerated(), id: \.element.id) { index, $habit in
-                        if index == 0 {
-                            Color.clear
-                                .frame(height: 0)
-                        }
-
-                        HabitItemView(habit: $habit)
-                            .padding(.horizontal)
-                            .swipeActions {
-                                Button {
-                                } label: {
-                                    Image(systemName: "arrow.counterclockwise")
-                                        .tint(.skyBlue)
+                        if habitStore.isHabit(habit, availableOn: habitStore.selectedDate) {
+                            HabitItemView(habit: $habit)
+                                .padding(.horizontal)
+                                .swipeActions {
+                                    Button {
+                                    } label: {
+                                        Image(systemName: "arrow.counterclockwise")
+                                            .tint(.skyBlue)
+                                    }
                                 }
-                            }
+                        }
                     }
                 }
-                .offset(y: -50)
-                .listRowSpacing(20)
                 // MARK: - List Configure
+                .listRowSpacing(20)
+                .padding(.top, 20)
+                
+                Spacer()
             }
-            
         }
         // MARK: - BaseScreen Configure
         .toolbar {

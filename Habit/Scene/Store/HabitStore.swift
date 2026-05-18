@@ -29,6 +29,14 @@ final class HabitStore {
         selectedDate = date
     }
 
+    func isHabit(_ habit: Habit, availableOn date: Date) -> Bool {
+        let calendar = Calendar.current
+        let selectedDay = calendar.startOfDay(for: date)
+        let createdDay = calendar.startOfDay(for: habit.createdAt)
+
+        return selectedDay >= createdDay && habit.archivedAt == nil
+    }
+
     // MARK: - SwiftData Operations
 
     func fetchHabits() {
@@ -45,14 +53,24 @@ final class HabitStore {
 
     func addHabit(_ habit: Habit) {
         modelContext.insert(habit)
-        save()
-        fetchHabits()
+        if save() {
+            fetchHabits()
+        }
     }
 
-    func deleteHabit(_ habit: Habit) {
+    @discardableResult
+    func deleteSelectedHabit() -> Bool {
+        guard let habit = selectedHabit else { return false }
+
         modelContext.delete(habit)
-        save()
+
+        guard save() else {
+            return false
+        }
+
+        selectedHabit = nil
         fetchHabits()
+        return true
     }
 
     func updateHabitEntry(_ habit: Habit, date: Date, completedCount: Int, note: String? = nil) {
@@ -75,7 +93,7 @@ final class HabitStore {
         }
 
         updateStreaks(for: habit)
-        save()
+        _ = save()
     }
 
     private func updateStreaks(for habit: Habit) {
@@ -110,11 +128,13 @@ final class HabitStore {
         habit.longestStreak = max(habit.longestStreak, streak)
     }
 
-    private func save() {
+    private func save() -> Bool {
         do {
             try modelContext.save()
+            return true
         } catch {
             Logger.error("Failed to save context: \(error)")
+            return false
         }
     }
 }
