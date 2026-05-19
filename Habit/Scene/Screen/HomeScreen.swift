@@ -17,10 +17,10 @@ struct HomeScreen: View {
             VStack(spacing: 0) {
                 WeekView()
                     .padding(.horizontal)
-
+                
                 AppList {
                     ForEach($habitStore.habits.enumerated(), id: \.element.id) { index, $habit in
-                        if habitStore.isHabit(habit, availableOn: habitStore.selectedDate) {
+                        if habitStore.isHabit(habit) {
                             HabitItemView(habit: $habit)
                                 .padding(.horizontal)
                                 .swipeActions {
@@ -35,7 +35,7 @@ struct HomeScreen: View {
                 }
                 // MARK: - List Configure
                 .listRowSpacing(20)
-                .padding(.top, 20)
+                .contentMargins(.top, 20)
                 
                 Spacer()
             }

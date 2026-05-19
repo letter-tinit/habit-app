@@ -44,7 +44,7 @@ extension HabitEntry {
         let targetDate = Calendar.current.startOfDay(for: date)
         
         return entries.first {
-            Calendar.current.isDate($0.date, inSameDayAs: targetDate)
+            $0.date.isEqual(with: targetDate)
         }
     }
 }

@@ -29,6 +29,7 @@ struct MainTabScreen: View {
                 AppNavigationStack(path: $homeRouter.path) {
                     HomeScreen()
                         .environment(homeRouter)
+                        .tint(.black)
                 } destination: { route in
                     switch route {
                     case .habitDetail:
@@ -38,8 +39,8 @@ struct MainTabScreen: View {
             } label: {
                 Image(systemName: AppTab.home.symbolImage)
             }
-
         }
+        .tint(.rosePink)
     }
 }
 

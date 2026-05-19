@@ -53,9 +53,9 @@ struct BaseScreen<Content: View>: View {
         case .lightPink:
             return LinearGradient(
                 colors: [
-                    Color(red: 1.0, green: 0.97, blue: 0.98), // near white pink
-                    Color(red: 1.0, green: 0.94, blue: 0.96), // very soft blush
-                    Color(red: 1.0, green: 0.91, blue: 0.94)  // delicate pastel pink
+                    Color(red: 1.0, green: 0.985, blue: 0.99), // ultra light pink
+                    Color(red: 1.0, green: 0.975, blue: 0.985), // soft airy blush
+                    Color(red: 1.0, green: 0.965, blue: 0.98), // subtle pastel pink
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -75,7 +75,7 @@ struct BaseScreen<Content: View>: View {
     
     init(
         _ title: Binding<String>,
-        backgroundType: BackgroundGradientType = .cyan,
+        backgroundType: BackgroundGradientType = .lightPink,
         isFocused: Binding<Bool> = .constant(false),
         @ViewBuilder content: @escaping () -> Content
     ) {

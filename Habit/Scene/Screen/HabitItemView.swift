@@ -84,7 +84,7 @@ struct HabitItemView: View {
             )
             .padding(.horizontal, 10)
             .shadow(color: .black.opacity(0.3), radius: 1)
-            //            .opacity(progress == 1 ? 0 : 1)
+            .opacity(entry?.completionRatio == 1 ? 0 : 1)
         }
         .mask {
             RoundedRectangle(cornerRadius: cornerRadius)

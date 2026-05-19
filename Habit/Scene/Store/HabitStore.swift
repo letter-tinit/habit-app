@@ -15,7 +15,7 @@ final class HabitStore {
     private var modelContext: ModelContext
 
     // MARK: - HOMESREEN
-    var homeTitle: String = "TODAY"
+    var homeTitle: String = AppString.Home.today
     var habits: [Habit] = []
     var selectedHabit: Habit?
     private(set) var selectedDate: Date = Date()
@@ -24,21 +24,34 @@ final class HabitStore {
         self.modelContext = modelContext
         fetchHabits()
     }
+    
+    // MARK: - Public Helper
 
     func didChangeSelecteDate(_ date: Date) {
         selectedDate = date
+        if selectedDate.isToday() {
+            homeTitle = AppString.Home.today
+        } else {
+            homeTitle = selectedDate.toString(withFormat: .dayNameWithNo)
+        }
     }
 
-    func isHabit(_ habit: Habit, availableOn date: Date) -> Bool {
+    func isHabit(_ habit: Habit) -> Bool {
+        let date = selectedDate
         let calendar = Calendar.current
         let selectedDay = calendar.startOfDay(for: date)
         let createdDay = calendar.startOfDay(for: habit.createdAt)
 
         return selectedDay >= createdDay && habit.archivedAt == nil
     }
+    
+    /// Input: a date param
+    /// Output: check is input date is selected Date or not
+    func isSelectedDay(_ date: Date) -> Bool {
+        date.isEqual(with: selectedDate)
+    }
 
     // MARK: - SwiftData Operations
-
     func fetchHabits() {
         let descriptor = FetchDescriptor<Habit>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
@@ -78,7 +91,7 @@ final class HabitStore {
         let targetDate = calendar.startOfDay(for: date)
 
         if let existingEntry = habit.entries.first(where: {
-            calendar.isDate($0.date, inSameDayAs: targetDate)
+            $0.date.isEqual(with: targetDate)
         }) {
             existingEntry.completedCount = completedCount
             if let note = note {
@@ -114,7 +127,7 @@ final class HabitStore {
         var checkDate = lastCompleted
 
         for entry in sortedEntries {
-            if calendar.isDate(entry.date, inSameDayAs: checkDate) {
+            if entry.date.isEqual(with: checkDate) {
                 streak += 1
                 if let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) {
                     checkDate = previousDay
