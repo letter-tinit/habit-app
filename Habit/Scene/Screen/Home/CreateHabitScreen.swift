@@ -83,7 +83,7 @@ struct CreateHabitScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    
+                    saveHabit()
                 } label: {
                     Text("Save")
                         .fontWeight(canSave ? .bold : .regular)
@@ -256,7 +256,7 @@ struct CreateHabitScreen: View {
                 .font(.headline)
                 .fontDesign(.rounded)
             
-            HabitItemView(habit: habit)
+            HabitItemView(habit: habit, selectedDate: Date())
         }
     }
 

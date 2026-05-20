@@ -8,14 +8,24 @@
 import SwiftUI
 
 struct HabitItemView: View {
-    @Environment(HomeRouter.self) private var router
-    @Environment(HabitStore.self) private var habitStore
-
-    @State private var showNumberPad = false
+    enum Action {
+        case tapped
+        case progressChanged(Int)
+    }
+    
+    // MARK: - Input Param
     let habit: Habit
+    let selectedDate: Date
+    
+    // MARK: - UI State
     private let cornerRadius: CGFloat = 12.0
+    @State private var showNumberPad = false
+    
+    // MARK: - Callback
+    var handleAction: ((Action) -> Void) = { _ in }
+    
     var body: some View {
-        let entry = habit.entry(for: habitStore.selectedDate)
+        let entry = habit.entry(for: selectedDate)
         let completedCount = entry?.completedCount ?? 0
         let completionRatio = entry?.completionRatio ?? 0
 
@@ -32,8 +42,7 @@ struct HabitItemView: View {
                 .scaleEffect(x: completionRatio, y: 1, anchor: .leading)
             
             Button {
-                habitStore.selectedHabit = habit
-                router.push(.habitDetail)
+                handleAction(.tapped)
             } label: {
                 HStack {
                     Text(habit.emoji)
@@ -105,7 +114,7 @@ struct HabitItemView: View {
             ) { value in
                 baseAnimation {
                     let newCount = completedCount + value
-                    habitStore.updateHabitEntry(habit, completedCount: newCount)
+                    handleAction(.progressChanged(newCount))
                 }
             }
             .presentationDetents([.medium, .large])
@@ -115,7 +124,7 @@ struct HabitItemView: View {
 }
 
 #Preview {
-    HabitItemView(habit: .mock)
+    HabitItemView(habit: .mock, selectedDate: Date())
 }
 
 // MARK: - NumberPadSheet
@@ -143,7 +152,6 @@ struct NumberPadSheet: View {
             // Display
             Text(input.isEmpty ? "0" : input)
                 .font(.system(size: 48, weight: .semibold, design: .rounded))
-//                .frame(maxWidth: .infinity)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: input)
                 .overlay(alignment: .bottomTrailing) {

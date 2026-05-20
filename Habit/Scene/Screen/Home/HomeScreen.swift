@@ -21,16 +21,18 @@ struct HomeScreen: View {
                 
                 AppList {
                     ForEach(habitStore.filteredHabit, id: \.id) { habit in
-                        HabitItemView(habit: habit)
-                            .padding(.horizontal)
-                            .swipeActions {
-                                Button {
-                                    habitStore.resetHabitEntry(habit)
-                                } label: {
-                                    Image(systemName: "arrow.counterclockwise")
-                                        .tint(.skyBlue)
-                                }
+                        HabitItemView(habit: habit, selectedDate: habitStore.selectedDate) { action in
+                            handleHabitItemAction(action, for: habit)
+                        }
+                        .padding(.horizontal)
+                        .swipeActions {
+                            Button {
+                                resetHabit(habit)
+                            } label: {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .tint(.skyBlue)
                             }
+                        }
                     }
                 }
                 // MARK: - List Configure
@@ -74,6 +76,24 @@ struct HomeScreen: View {
                 }
             }
         }
+    }
+    
+    private func handleHabitItemAction(_ action: HabitItemView.Action, for habit: Habit) {
+        switch action {
+        case .tapped:
+            showHabitDetail(habit)
+        case .progressChanged(let value):
+            habitStore.updateHabitEntry(habit, completedCount: value)
+        }
+    }
+    
+    private func resetHabit(_ habit: Habit) {
+        habitStore.resetHabitEntry(habit)
+    }
+    
+    private func showHabitDetail(_ habit: Habit) {
+        habitStore.selectedHabit = habit
+        router.push(.habitDetail)
     }
 }
 
