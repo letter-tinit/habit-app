@@ -9,11 +9,12 @@ import SwiftUI
 
 struct HabitDetailScreen: View {
     @Environment(HabitStore.self) private var habitStore
+    let habitID: UUID
 
     var body: some View {
         Group {
-            if let habit = habitStore.selectedHabit {
-                HabitDetailContent(habit: habit)
+            if let habit = habitStore.habit(id: habitID) {
+                HabitDetailContent(habitID: habitID, habit: habit)
             } else {
                 Text("No habit selected")
             }
@@ -24,8 +25,10 @@ struct HabitDetailScreen: View {
 struct HabitDetailContent: View {
     @Environment(HabitStore.self) private var habitStore
     @Environment(\.dismiss) private var dismiss
+    let habitID: UUID
     @Bindable var habit: Habit
     @FocusState private var isFocused: Bool
+    @State private var shouldDeleteOnDisappear = false
 
     var body: some View {
         let originalEmoji = habit.emoji
@@ -61,18 +64,22 @@ struct HabitDetailContent: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     baseAnimation {
-                        if habitStore.deleteSelectedHabit() {
-                            dismiss()
-                        }
+                        shouldDeleteOnDisappear = true
+                        dismiss()
                     }
                 } label: {
                     Image(systemName: "trash")
                 }
             }
         }
+        .onDisappear {
+            if shouldDeleteOnDisappear {
+                habitStore.deleteHabit(id: habitID)
+            }
+        }
     }
 }
 
 #Preview {
-    HabitDetailScreen()
+    HabitDetailScreen(habitID: Habit.mock.id)
 }

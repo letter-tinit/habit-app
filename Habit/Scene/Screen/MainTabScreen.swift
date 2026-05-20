@@ -44,8 +44,8 @@ struct MainTabScreen: View {
                         .tint(.black)
                 } destination: { route in
                     switch route {
-                    case .habitDetail:
-                        HabitDetailScreen()
+                    case .habitDetail(let habitID):
+                        HabitDetailScreen(habitID: habitID)
                             .environment(homeRouter)
                             .tint(.black)
                     case .createHabit:

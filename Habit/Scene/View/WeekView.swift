@@ -41,11 +41,14 @@ struct WeekView: View {
     @State private var centerDate = Date()
     @State private var weekPage = 0
 
-    private var calendar: Calendar {
-        AppCalendar.current
+    private func calendar(weekStartsOnMonday: Bool) -> Calendar {
+        var calendar = Calendar.current
+        calendar.firstWeekday = weekStartsOnMonday ? 2 : 1
+        return calendar
     }
 
-    private func weekDates(for page: Int) -> [Date] {
+    private func weekDates(for page: Int, weekStartsOnMonday: Bool) -> [Date] {
+        let calendar = calendar(weekStartsOnMonday: weekStartsOnMonday)
         guard
             let pageDate = calendar.date(byAdding: .weekOfYear, value: page, to: centerDate),
             let weekInterval = calendar.dateInterval(of: .weekOfYear, for: pageDate)
@@ -58,7 +61,8 @@ struct WeekView: View {
         }
     }
 
-    private func moveWeek(by value: Int) {
+    private func moveWeek(by value: Int, weekStartsOnMonday: Bool) {
+        let calendar = calendar(weekStartsOnMonday: weekStartsOnMonday)
         guard let date = calendar.date(byAdding: .weekOfYear, value: value, to: centerDate) else {
             return
         }
@@ -87,8 +91,8 @@ struct WeekView: View {
         centerDate = date
     }
     
-    private func weekRow(for page: Int) -> some View {
-        let dates = weekDates(for: page)
+    private func weekRow(for page: Int, weekStartsOnMonday: Bool) -> some View {
+        let dates = weekDates(for: page, weekStartsOnMonday: weekStartsOnMonday)
         return HStack {
             ForEach(Array(dates.enumerated()), id: \.element) { index, date in
                 let isSelected = habitStore.isSelectedDay(date)
@@ -142,9 +146,11 @@ struct WeekView: View {
     }
 
     var body: some View {
+        let weekStartsOnMonday = habitStore.weekStartsOnMonday
+        
         TabView(selection: $weekPage) {
             ForEach(-1...1, id: \.self) { page in
-                weekRow(for: page)
+                weekRow(for: page, weekStartsOnMonday: weekStartsOnMonday)
                     .tag(page)
             }
         }
@@ -155,10 +161,14 @@ struct WeekView: View {
         }
         .onChange(of: weekPage) { _, newValue in
             guard newValue != 0 else { return }
-            moveWeek(by: newValue)
+            moveWeek(by: newValue, weekStartsOnMonday: weekStartsOnMonday)
         }
         .onChange(of: habitStore.selectedDate) { _, newValue in
             syncCenterDateIfNeeded(with: newValue)
+        }
+        .onChange(of: weekStartsOnMonday) {
+            centerDate = habitStore.selectedDate
+            weekPage = 0
         }
         .frame(maxWidth: .infinity)
     }

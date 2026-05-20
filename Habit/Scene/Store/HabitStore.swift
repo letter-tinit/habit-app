@@ -135,18 +135,41 @@ final class HabitStore {
             fetchHabits()
         }
     }
-
+    
+    func habit(id: UUID) -> Habit? {
+        habits.first { $0.id == id }
+    }
+    
     @discardableResult
-    func deleteSelectedHabit() -> Bool {
-        guard let habit = selectedHabit else { return false }
+    func deleteHabit(id: UUID) -> Bool {
+        guard let habit = habit(id: id) else { return false }
+        habits.removeAll { $0.id == id }
 
         modelContext.delete(habit)
 
         guard save() else {
+            fetchHabits()
             return false
         }
 
+        fetchHabits()
+        return true
+    }
+
+    @discardableResult
+    func deleteSelectedHabit() -> Bool {
+        guard let habit = selectedHabit else { return false }
+        let habitID = habit.id
         selectedHabit = nil
+        habits.removeAll { $0.id == habitID }
+
+        modelContext.delete(habit)
+
+        guard save() else {
+            fetchHabits()
+            return false
+        }
+
         fetchHabits()
         return true
     }

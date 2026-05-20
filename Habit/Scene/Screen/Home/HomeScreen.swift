@@ -83,17 +83,24 @@ struct HomeScreen: View {
         case .tapped:
             showHabitDetail(habit)
         case .progressChanged(let value):
+            let wasCompleted = habit.entry(for: habitStore.selectedDate)?.isCompleted ?? false
             habitStore.updateHabitEntry(habit, completedCount: value)
+            let isCompleted = habit.entry(for: habitStore.selectedDate)?.isCompleted ?? false
+            
+            if !wasCompleted && isCompleted {
+                Haptic.success()
+                SoundPlayer.done()
+            }
         }
     }
     
     private func resetHabit(_ habit: Habit) {
+        Haptic.warning()
         habitStore.resetHabitEntry(habit)
     }
     
     private func showHabitDetail(_ habit: Habit) {
-        habitStore.selectedHabit = habit
-        router.push(.habitDetail)
+        router.push(.habitDetail(habit.id))
     }
 }
 

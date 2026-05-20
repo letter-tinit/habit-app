@@ -14,24 +14,17 @@ struct CreateHabitScreen: View {
     @FocusState private var isFocused: Bool
 
     @State private var screenTitle = "New Habit"
-    @State private var name = ""
+    @State private var name = "Habit Name"
     @State private var emoji = "⭐"
     @State private var habitDescription = ""
-    @State private var colorHex = "#4ECDC4"
+    @State private var colorHex = AppConstant.defaultColor
     @State private var frequency: HabitFrequency = .daily
     @State private var selectedDays: Set<Int> = Set(0...6)
     @State private var goalType: GoalType = .todo
     @State private var goalCountText = "1"
     @State private var goalUnit = "times"
 
-    private let colorOptions = [
-        "#4ECDC4",
-        "#FF6B6B",
-        "#FFD93D",
-        "#6C5CE7",
-        "#A8E6CF",
-        "#87CEEB"
-    ]
+    private let colorOptions = AppConstant.colorOptions
 
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -231,7 +224,7 @@ struct CreateHabitScreen: View {
     }
     
     private var previewItem: some View {
-        let habit = Habit(
+        let emptyHabit = Habit(
             name: trimmedName,
             emoji: trimmedEmoji,
             description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -240,15 +233,78 @@ struct CreateHabitScreen: View {
             targetDaysOfWeek: Array(selectedDays).sorted(),
             goalType: goalType,
             goalCount: goalCount,
-            goalUnit: trimmedGoalUnit
+            goalUnit: trimmedGoalUnit,
         )
+        
+        let entry = HabitEntry(
+            date: Date(),
+            completedCount: 0,
+            note: "Read 20 pages and practiced SwiftUI"
+        )
+        
+        emptyHabit.entries.append(entry)
+        
+        let halfHabit = Habit(
+            name: trimmedName,
+            emoji: trimmedEmoji,
+            description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+            colorHex: colorHex,
+            frequency: frequency,
+            targetDaysOfWeek: Array(selectedDays).sorted(),
+            goalType: goalType,
+            goalCount: goalCount,
+            goalUnit: trimmedGoalUnit,
+        )
+        
+        let halfEntry = HabitEntry(
+            date: Date(),
+            completedCount: goalCount / 2,
+            note: "Read 20 pages and practiced SwiftUI"
+        )
+        
+        halfHabit.entries.append(halfEntry)
+        
+        let doneHabit = Habit(
+            name: trimmedName,
+            emoji: trimmedEmoji,
+            description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+            colorHex: colorHex,
+            frequency: frequency,
+            targetDaysOfWeek: Array(selectedDays).sorted(),
+            goalType: goalType,
+            goalCount: goalCount,
+            goalUnit: trimmedGoalUnit,
+        )
+        
+        let doneEntry = HabitEntry(
+            date: Date(),
+            completedCount: goalCount,
+            note: "Read 20 pages and practiced SwiftUI"
+        )
+        
+        doneHabit.entries.append(doneEntry)
         
         return VStack(alignment: .leading, spacing: 12) {
             Text("Preview")
                 .font(.headline)
                 .fontDesign(.rounded)
             
-            HabitItemView(habit: habit, selectedDate: Date())
+            Text("Untrack")
+                .font(.subheadline)
+                .fontDesign(.rounded)
+            HabitItemView(habit: emptyHabit, selectedDate: Date())
+
+            if goalType == .count && goalCount > 1 {
+                Text("In Progress")
+                    .font(.subheadline)
+                    .fontDesign(.rounded)
+                HabitItemView(habit: halfHabit, selectedDate: Date())
+            }
+
+            Text("Done")
+                .font(.subheadline)
+                .fontDesign(.rounded)
+            HabitItemView(habit: doneHabit, selectedDate: Date())
         }
     }
 
