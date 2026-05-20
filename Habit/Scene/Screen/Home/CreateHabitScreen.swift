@@ -12,12 +12,6 @@ struct CreateHabitScreen: View {
     @Environment(HabitStore.self) private var habitStore
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isFocused: Bool
-    private var focusBinding: Binding<Bool> {
-        Binding(
-            get: { isFocused },
-            set: { isFocused = $0 }
-        )
-    }
 
     @State private var screenTitle = "New Habit"
     @State private var name = ""
@@ -80,6 +74,7 @@ struct CreateHabitScreen: View {
                 .padding(.bottom, 28)
             }
         }
+        // MARK: - ToolBar
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -91,13 +86,8 @@ struct CreateHabitScreen: View {
                 }
                 .disabled(!canSave)
             }
-            
-            ToolbarItem(placement: .keyboard) {
-                Button("Done") {
-                    isFocused = false
-                }
-            }
         }
+        .animation(.snappy, value: goalType)
     }
 
     private var identitySection: some View {
@@ -127,9 +117,9 @@ struct CreateHabitScreen: View {
                     
                     TextField("", text: $emoji)
                         .frame(width: 0, height: 0)
-                        .opacity(0)
                         .focused($isFocused)
-                        .keyboardType(.emoji ?? .default)
+                        .opacity(0)
+                        .keyboardType(.emoji)
                         .onChange(of: emoji) { _, newValue in
                             if let last = newValue.last, last.isEmoji {
                                 emoji = String(last)
@@ -184,13 +174,13 @@ struct CreateHabitScreen: View {
             }
         }
     }
-
+    
     private var goalSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Goal")
                 .font(.headline)
                 .fontDesign(.rounded)
-
+            
             Picker("Goal type", selection: $goalType) {
                 Text("Todo").tag(GoalType.todo)
                 Text("Count").tag(GoalType.count)
@@ -202,19 +192,21 @@ struct CreateHabitScreen: View {
                     goalUnit = "times"
                 }
             }
+            
+            if goalType == .count {
+                HStack(spacing: 12) {
+                    TextField("Target", text: $goalCountText)
+                        .keyboardType(.numberPad)
+                        .disabled(goalType == .todo)
+                        .padding()
+                        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
 
-            HStack(spacing: 12) {
-                TextField("Target", text: $goalCountText)
-                    .keyboardType(.numberPad)
-                    .disabled(goalType == .todo)
-                    .padding()
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
-
-                TextField("Unit", text: $goalUnit)
-                    .padding()
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+                    TextField("Unit", text: $goalUnit)
+                        .padding()
+                        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+                }
+                .transition(.opacity)
             }
-            .opacity(goalType == .todo ? 1 : 0)
         }
     }
 

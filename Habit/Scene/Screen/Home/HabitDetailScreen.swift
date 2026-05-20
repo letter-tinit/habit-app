@@ -26,16 +26,10 @@ struct HabitDetailContent: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var habit: Habit
     @FocusState private var isFocused: Bool
-    private var focusBinding: Binding<Bool> {
-        Binding(
-            get: { isFocused },
-            set: { isFocused = $0 }
-        )
-    }
 
     var body: some View {
         let originalEmoji = habit.emoji
-        BaseScreen($habit.name, isFocused: focusBinding) {
+        BaseScreen($habit.name) {
             VStack {
                 Button {
                     baseAnimation {
@@ -50,7 +44,7 @@ struct HabitDetailContent: View {
                     .frame(height: 0)
                     .opacity(0)
                     .focused($isFocused)
-                    .keyboardType(.emoji ?? .default)
+                    .keyboardType(.emoji)
                     .onChange(of: habit.emoji) { _, newValue in
                         if let last = newValue.last, last.isEmoji {
                             habit.emoji = String(last)

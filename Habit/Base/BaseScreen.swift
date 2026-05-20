@@ -70,18 +70,15 @@ struct BaseScreen<Content: View>: View {
     @Binding private var title: String
     private var backgroundType: BackgroundGradientType
     private var content: () -> Content
-    @Binding private var isFocused: Bool
     
     init(
         _ title: Binding<String> = .constant(""),
         backgroundType: BackgroundGradientType = .cyan,
-        isFocused: Binding<Bool> = .constant(false),
         @ViewBuilder content: @escaping () -> Content
     ) {
         self._title = title
         self.backgroundType = backgroundType
         self.content = content
-        self._isFocused = isFocused
     }
     
     var body: some View {
@@ -90,14 +87,7 @@ struct BaseScreen<Content: View>: View {
                 .ignoresSafeArea()
             
             content()
-            
-            Color.gray.opacity(isFocused ? 0.0001 : 0)
-                .onTapGesture {
-                    if isFocused {
-                        isFocused = false
-                    }
-                }
-                .ignoresSafeArea()
+                .dismissKeyboardOnTap()
         }
         .toolbarTitleDisplayMode(.inline)
         .toolbar {

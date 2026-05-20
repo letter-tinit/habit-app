@@ -19,6 +19,13 @@ extension View {
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
     }
+    
+    func dismissKeyboardOnTap() -> some View {
+        self.onTapGesture {
+            UIApplication.shared.dismissKeyboard()
+        }
+    }
+    
 }
 
 struct AppList<Content: View>: View {
