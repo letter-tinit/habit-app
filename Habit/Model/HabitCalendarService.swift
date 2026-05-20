@@ -33,7 +33,7 @@ struct HabitCalendarService {
 
     // ── Fetch all entries for a specific calendar month ──────────────────
     func entries(for habit: Habit, in month: Date) -> [HabitEntry] {
-        let cal = Calendar.current
+        let cal = AppCalendar.current
         guard
             let start = cal.date(from: cal.dateComponents([.year, .month], from: month)),
             let end   = cal.date(byAdding: DateComponents(month: 1, day: -1), to: start)
@@ -57,7 +57,7 @@ struct HabitCalendarService {
 
     // ── Fetch all habits that should appear on a given date ───────────────
 //    func scheduledHabits(for date: Date) -> [Habit] {
-//        let weekday = Calendar.current.component(.weekday, from: date) - 1 // 0-indexed
+//        let weekday = AppCalendar.current.component(.weekday, from: date) - 1 // 0-indexed
 //
 //        let predicate = #Predicate<Habit> { habit in
 //            habit.archivedAt == nil && (
@@ -72,7 +72,7 @@ struct HabitCalendarService {
 
     // ── Completion map for a full month: [dayNumber: Bool] ───────────────
     func completionMap(for habit: Habit, in month: Date) -> [Int: Bool] {
-        let cal = Calendar.current
+        let cal = AppCalendar.current
         return Dictionary(
             uniqueKeysWithValues: entries(for: habit, in: month).compactMap { entry in
                 let day = cal.component(.day, from: entry.date)
@@ -83,8 +83,8 @@ struct HabitCalendarService {
 
     // ── Weekly completion rate (last 7 days) ─────────────────────────────
     func weeklyRate(for habit: Habit) -> Double {
-        let today = Calendar.current.startOfDay(for: Date())
-        guard let weekAgo = Calendar.current.date(byAdding: .day, value: -6, to: today) else { return 0 }
+        let today = AppCalendar.current.startOfDay(for: Date())
+        guard let weekAgo = AppCalendar.current.date(byAdding: .day, value: -6, to: today) else { return 0 }
 
         let habitID = habit.persistentModelID
         let predicate = #Predicate<HabitEntry> { entry in
@@ -101,7 +101,7 @@ struct HabitCalendarService {
     // ── Upsert a HabitEntry for today ────────────────────────────────────
     @discardableResult
     func logCompletion(for habit: Habit, count: Int = 1, note: String = "") -> HabitEntry {
-        let today = Calendar.current.startOfDay(for: Date())
+        let today = AppCalendar.current.startOfDay(for: Date())
         let habitID = habit.persistentModelID
 
         let predicate = #Predicate<HabitEntry> { entry in
@@ -135,15 +135,15 @@ struct HabitCalendarService {
         let allEntries = (try? context.fetch(descriptor)) ?? []
         let completedDates = Set(
             allEntries.filter { $0.isCompleted }
-                      .map { Calendar.current.startOfDay(for: $0.date) }
+                      .map { AppCalendar.current.startOfDay(for: $0.date) }
         )
 
         var streak = 0
-        var checking = Calendar.current.startOfDay(for: Date())
+        var checking = AppCalendar.current.startOfDay(for: Date())
 
         while completedDates.contains(checking) {
             streak += 1
-            checking = Calendar.current.date(byAdding: .day, value: -1, to: checking)!
+            checking = AppCalendar.current.date(byAdding: .day, value: -1, to: checking)!
         }
 
         habit.currentStreak = streak

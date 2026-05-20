@@ -29,7 +29,7 @@ enum DateFormat {
 
 extension Date {
     func isToday() -> Bool {
-        return Calendar.current.isDateInToday(self)
+        return AppCalendar.current.isDateInToday(self)
     }
     
     func toString(withFormat dateFormat: DateFormat) -> String {
@@ -39,6 +39,6 @@ extension Date {
     }
     
     func isEqual(with targetDate: Date) -> Bool {
-        Calendar.current.isDate(self, inSameDayAs: targetDate)
+        AppCalendar.current.isDate(self, inSameDayAs: targetDate)
     }
 }

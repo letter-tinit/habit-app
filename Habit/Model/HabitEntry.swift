@@ -31,7 +31,7 @@ final class HabitEntry {
     // MARK: - Init
     init(date: Date, completedCount: Int = 0, note: String = "") {
         self.id = UUID()
-        self.date = Calendar.current.startOfDay(for: date)
+        self.date = AppCalendar.current.startOfDay(for: date)
         self.completedCount = completedCount
         self.note = note
         self.createdAt = Date()
@@ -41,7 +41,7 @@ final class HabitEntry {
 
 extension HabitEntry {
     func entry(for date: Date, in entries: [HabitEntry]) -> HabitEntry? {
-        let targetDate = Calendar.current.startOfDay(for: date)
+        let targetDate = AppCalendar.current.startOfDay(for: date)
         
         return entries.first {
             $0.date.isEqual(with: targetDate)

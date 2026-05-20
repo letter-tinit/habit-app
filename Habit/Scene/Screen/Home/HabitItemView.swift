@@ -12,7 +12,7 @@ struct HabitItemView: View {
     @Environment(HabitStore.self) private var habitStore
 
     @State private var showNumberPad = false
-    @Binding var habit: Habit
+    let habit: Habit
     private let cornerRadius: CGFloat = 12.0
     var body: some View {
         let entry = habit.entry(for: habitStore.selectedDate)
@@ -32,7 +32,6 @@ struct HabitItemView: View {
                 .scaleEffect(x: completionRatio, y: 1, anchor: .leading)
             
             Button {
-                logDebug("Select habit")
                 habitStore.selectedHabit = habit
                 router.push(.habitDetail)
             } label: {
@@ -65,12 +64,15 @@ struct HabitItemView: View {
         }
         .overlay(alignment: .trailing) {
             Button {
-                logDebug("plus")
                 baseAnimation {
-                    showNumberPad = true
+                    if habit.goalType == .todo {
+                        
+                    } else {
+                        showNumberPad = true
+                    }
                 }
             } label: {
-                Image(systemName: "plus")
+                Image(systemName: habit.goalType == .todo ? "checkmark" : "plus")
                     .fontWeight(.bold)
                     .fontDesign(.rounded)
             }
@@ -103,7 +105,7 @@ struct HabitItemView: View {
             ) { value in
                 baseAnimation {
                     let newCount = completedCount + value
-                    habitStore.updateHabitEntry(habit, date: habitStore.selectedDate, completedCount: newCount)
+                    habitStore.updateHabitEntry(habit, completedCount: newCount)
                 }
             }
             .presentationDetents([.medium, .large])
@@ -113,7 +115,7 @@ struct HabitItemView: View {
 }
 
 #Preview {
-    HabitItemView(habit: .constant(.mock))
+    HabitItemView(habit: .mock)
 }
 
 // MARK: - NumberPadSheet

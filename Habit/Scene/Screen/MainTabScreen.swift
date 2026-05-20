@@ -10,11 +10,23 @@ import SwiftData
 
 enum AppTab: String {
     case home = "Home"
+    case profile = "Profile"
     
     var symbolImage: String {
         return switch self {
         case .home:
             "figure.run"
+        case .profile:
+            "person.crop.circle"
+        }
+    }
+    
+    var tintColor: Color {
+        switch self {
+        case .home:
+                .rosePink
+        case .profile:
+                .aquaCyan
         }
     }
 }
@@ -34,13 +46,25 @@ struct MainTabScreen: View {
                     switch route {
                     case .habitDetail:
                         HabitDetailScreen()
+                            .environment(homeRouter)
+                            .tint(.black)
+                    case .createHabit:
+                        CreateHabitScreen()
+                            .environment(homeRouter)
+                            .tint(.black)
                     }
                 }
             } label: {
                 Image(systemName: AppTab.home.symbolImage)
             }
+
+            Tab(value: AppTab.profile) {
+                ProfileScreen()
+            } label: {
+                Image(systemName: AppTab.profile.symbolImage)
+            }
         }
-        .tint(.rosePink)
+        .tint(activeTab.tintColor)
     }
 }
 

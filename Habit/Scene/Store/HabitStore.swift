@@ -14,19 +14,26 @@ final class HabitStore {
     // MARK: - Dependencies
     private var modelContext: ModelContext
 
-    // MARK: - HOMESREEN
+    // MARK: - HOME PROPERTY
     var homeTitle: String = AppString.Home.today
     var habits: [Habit] = []
+    var filteredHabit: [Habit] {
+        return habits.filter(isHabit)
+    }
     var selectedHabit: Habit?
     private(set) var selectedDate: Date = Date()
 
+    // MARK: - PROFILE PROPERTY
+    var userProfile: UserProfile?
+    
+    // MARK: - Constructor
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
+        fetchUserProfile()
         fetchHabits()
     }
     
-    // MARK: - Public Helper
-
+    // MARK: - HOME SCREEN
     func didChangeSelecteDate(_ date: Date) {
         selectedDate = date
         if selectedDate.isToday() {
@@ -38,11 +45,29 @@ final class HabitStore {
 
     func isHabit(_ habit: Habit) -> Bool {
         let date = selectedDate
-        let calendar = Calendar.current
+        let calendar = AppCalendar.current
         let selectedDay = calendar.startOfDay(for: date)
         let createdDay = calendar.startOfDay(for: habit.createdAt)
 
-        return selectedDay >= createdDay && habit.archivedAt == nil
+        guard selectedDay >= createdDay, habit.archivedAt == nil else {
+            return false
+        }
+
+        let weekday = calendar.component(.weekday, from: selectedDay) - 1
+        let createdWeekday = calendar.component(.weekday, from: createdDay) - 1
+
+        switch habit.frequency {
+        case .daily:
+            return true
+        case .weekday:
+            return (1...5).contains(weekday)
+        case .weekend:
+            return weekday == 0 || weekday == 6
+        case .weekly:
+            return weekday == createdWeekday
+        case .custom:
+            return habit.targetDaysOfWeek.contains(weekday)
+        }
     }
     
     /// Input: a date param
@@ -51,7 +76,47 @@ final class HabitStore {
         date.isEqual(with: selectedDate)
     }
 
-    // MARK: - SwiftData Operations
+    var weekStartsOnMonday: Bool {
+        userProfile?.weekStartsOnMonday ?? true
+    }
+
+    var orderedWeekdays: [Int] {
+        weekStartsOnMonday
+            ? [1, 2, 3, 4, 5, 6, 0]
+            : [0, 1, 2, 3, 4, 5, 6]
+    }
+
+    // MARK: - SWIFT DATE UTIL
+    func fetchUserProfile() {
+        let descriptor = FetchDescriptor<UserProfile>()
+
+        do {
+            if let existingProfile = try modelContext.fetch(descriptor).first {
+                userProfile = existingProfile
+                AppCalendar.weekStartsOnMonday = existingProfile.weekStartsOnMonday
+            } else {
+                let profile = UserProfile()
+                modelContext.insert(profile)
+                userProfile = profile
+                AppCalendar.weekStartsOnMonday = profile.weekStartsOnMonday
+                _ = save()
+            }
+        } catch {
+            Logger.error("Failed to fetch user profile: \(error)")
+            userProfile = nil
+        }
+    }
+
+    func updateWeekStartsOnMonday(_ enabled: Bool) {
+        if userProfile == nil {
+            fetchUserProfile()
+        }
+
+        userProfile?.weekStartsOnMonday = enabled
+        AppCalendar.weekStartsOnMonday = enabled
+        _ = save()
+    }
+
     func fetchHabits() {
         let descriptor = FetchDescriptor<Habit>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
@@ -86,9 +151,9 @@ final class HabitStore {
         return true
     }
 
-    func updateHabitEntry(_ habit: Habit, date: Date, completedCount: Int, note: String? = nil) {
-        let calendar = Calendar.current
-        let targetDate = calendar.startOfDay(for: date)
+    func updateHabitEntry(_ habit: Habit, completedCount: Int, note: String? = nil) {
+        let calendar = AppCalendar.current
+        let targetDate = calendar.startOfDay(for: selectedDate)
 
         if let existingEntry = habit.entries.first(where: {
             $0.date.isEqual(with: targetDate)
@@ -108,9 +173,29 @@ final class HabitStore {
         updateStreaks(for: habit)
         _ = save()
     }
+    
+    func resetHabitEntry(_ habit: Habit) {
+        let calendar = AppCalendar.current
+        let targetDate = calendar.startOfDay(for: selectedDate)
+
+        if let existingEntry = habit.entries.first(where: {
+            $0.date.isEqual(with: targetDate)
+        }) {
+            existingEntry.completedCount = 0
+            existingEntry.updatedAt = Date()
+        } else {
+            let newEntry = HabitEntry(date: targetDate)
+            newEntry.habit = habit
+            habit.entries.append(newEntry)
+            modelContext.insert(newEntry)
+        }
+
+        updateStreaks(for: habit)
+        _ = save()
+    }
 
     private func updateStreaks(for habit: Habit) {
-        let calendar = Calendar.current
+        let calendar = AppCalendar.current
         let sortedEntries = habit.entries
             .filter { $0.isCompleted }
             .sorted { $0.date > $1.date }

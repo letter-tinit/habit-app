@@ -47,7 +47,7 @@ final class Habit {
         colorHex: String = "#4ECDC4",
         frequency: HabitFrequency = .daily,
         targetDaysOfWeek: [Int] = [],
-        goalType: GoalType = .boolean,
+        goalType: GoalType = .todo,
         goalCount: Int = 1,
         goalUnit: String = "times"
     ) {
@@ -81,13 +81,13 @@ enum HabitFrequency: String, Codable {
 }
 
 enum GoalType: String, Codable {
-    case boolean        // simply completed or not
+    case todo        // simply completed or not
     case count          // e.g. drink 8 glasses of water
 }
 
 extension Habit {
     func entry(for date: Date) -> HabitEntry? {
-        let targetDate = Calendar.current.startOfDay(for: date)
+        let targetDate = AppCalendar.current.startOfDay(for: date)
         
         return entries.first {
             $0.date.isEqual(with: targetDate)
@@ -127,7 +127,7 @@ extension Habit {
     }
     
     static var mocks: [Habit] {
-        let calendar = Calendar.current
+        let calendar = AppCalendar.current
         let today = Date()
         
         func makeEntries(

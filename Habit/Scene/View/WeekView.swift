@@ -40,7 +40,10 @@ struct WeekView: View {
     @Environment(HabitStore.self) private var habitStore
     @State private var centerDate = Date()
     @State private var weekPage = 0
-    private let calendar = Calendar.current
+
+    private var calendar: Calendar {
+        AppCalendar.current
+    }
 
     private func weekDates(for page: Int) -> [Date] {
         guard

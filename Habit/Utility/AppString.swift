@@ -10,4 +10,8 @@ enum AppString {
         static let all = "All"
         static let today = "TODAY"
     }
+    
+    enum Logger {
+        static let printTest = "THIS IS LOG TEST"
+    }
 }

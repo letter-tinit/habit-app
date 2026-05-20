@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct BaseScreen<Content: View>: View {
     // MARK: - ENUM
@@ -65,8 +66,6 @@ struct BaseScreen<Content: View>: View {
         }
     }
     
-    
-    
     // MARK: - Property
     @Binding private var title: String
     private var backgroundType: BackgroundGradientType
@@ -74,8 +73,8 @@ struct BaseScreen<Content: View>: View {
     @Binding private var isFocused: Bool
     
     init(
-        _ title: Binding<String>,
-        backgroundType: BackgroundGradientType = .lightPink,
+        _ title: Binding<String> = .constant(""),
+        backgroundType: BackgroundGradientType = .cyan,
         isFocused: Binding<Bool> = .constant(false),
         @ViewBuilder content: @escaping () -> Content
     ) {
@@ -102,11 +101,13 @@ struct BaseScreen<Content: View>: View {
         }
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .title) {
-                Text(title)
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .fontDesign(.rounded)
+            if !title.isEmpty {
+                ToolbarItem(placement: .title) {
+                    Text(title)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
+                }
             }
         }
     }
