@@ -22,6 +22,9 @@ struct HabitItemView: View {
     private let goalUnit: String
     private let completedCount: Int
     private let completionRatio: Double
+    private let currentStreak: Int
+    private let longestStreak: Int
+    private let lastCompleteStreak: Date?
     
     // MARK: - UI State
     private let cornerRadius: CGFloat = 12.0
@@ -46,6 +49,9 @@ struct HabitItemView: View {
         self.completedCount = entry?.completedCount ?? 0
         self.completionRatio = entry?.completionRatio ?? 0
         self.handleAction = handleAction
+        self.currentStreak = habit.currentStreak
+        self.longestStreak = habit.longestStreak
+        self.lastCompleteStreak = habit.lastCompletedDate
     }
     
     var body: some View {

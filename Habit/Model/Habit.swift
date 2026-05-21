@@ -75,7 +75,6 @@ final class Habit {
 enum HabitFrequency: String, Codable {
     case daily
     case weekday      // Monday to Friday
-    case weekly         // Same day per week
     case weekend        // Saturday and Sunday
     case custom         // N days per week/month
 }

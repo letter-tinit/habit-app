@@ -136,7 +136,6 @@ struct CreateHabitScreen: View {
             Picker("Repeat", selection: $frequency) {
                 Text("Daily").tag(HabitFrequency.daily)
                 Text("Weekday").tag(HabitFrequency.weekday)
-                Text("Weekly").tag(HabitFrequency.weekly)
                 Text("Weekend").tag(HabitFrequency.weekend)
                 Text("Custom").tag(HabitFrequency.custom)
             }
@@ -333,9 +332,6 @@ struct CreateHabitScreen: View {
             selectedDays = Set(0...6)
         case .weekday:
             selectedDays = [1, 2, 3, 4, 5]
-        case .weekly:
-            let weekday = AppCalendar.current.component(.weekday, from: Date()) - 1
-            selectedDays = [weekday]
         case .weekend:
             selectedDays = [0, 6]
         case .custom:

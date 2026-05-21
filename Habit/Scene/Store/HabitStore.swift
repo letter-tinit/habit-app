@@ -25,14 +25,14 @@ final class HabitStore {
 
     // MARK: - PROFILE PROPERTY
     var userProfile: UserProfile?
-    
+
     // MARK: - Constructor
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         fetchUserProfile()
         fetchHabits()
     }
-    
+
     // MARK: - HOME SCREEN
     func didChangeSelecteDate(_ date: Date) {
         selectedDate = date
@@ -44,32 +44,9 @@ final class HabitStore {
     }
 
     func isHabit(_ habit: Habit) -> Bool {
-        let date = selectedDate
-        let calendar = AppCalendar.current
-        let selectedDay = calendar.startOfDay(for: date)
-        let createdDay = calendar.startOfDay(for: habit.createdAt)
-
-        guard selectedDay >= createdDay, habit.archivedAt == nil else {
-            return false
-        }
-
-        let weekday = calendar.component(.weekday, from: selectedDay) - 1
-        let createdWeekday = calendar.component(.weekday, from: createdDay) - 1
-
-        switch habit.frequency {
-        case .daily:
-            return true
-        case .weekday:
-            return (1...5).contains(weekday)
-        case .weekend:
-            return weekday == 0 || weekday == 6
-        case .weekly:
-            return weekday == createdWeekday
-        case .custom:
-            return habit.targetDaysOfWeek.contains(weekday)
-        }
+        shouldSchedule(habit, on: selectedDate, calendar: AppCalendar.current)
     }
-    
+
     /// Input: a date param
     /// Output: check is input date is selected Date or not
     func isSelectedDay(_ date: Date) -> Bool {
@@ -135,11 +112,11 @@ final class HabitStore {
             fetchHabits()
         }
     }
-    
+
     func habit(id: UUID) -> Habit? {
         habits.first { $0.id == id }
     }
-    
+
     @discardableResult
     func deleteHabit(id: UUID) -> Bool {
         guard let habit = habit(id: id) else { return false }
@@ -196,7 +173,7 @@ final class HabitStore {
         updateStreaks(for: habit)
         _ = save()
     }
-    
+
     func resetHabitEntry(_ habit: Habit) {
         let calendar = AppCalendar.current
         let targetDate = calendar.startOfDay(for: selectedDate)
@@ -219,34 +196,133 @@ final class HabitStore {
 
     private func updateStreaks(for habit: Habit) {
         let calendar = AppCalendar.current
-        let sortedEntries = habit.entries
-            .filter { $0.isCompleted }
-            .sorted { $0.date > $1.date }
+        let completedDates = Set(
+            habit.entries
+                .filter { $0.isCompleted }
+                .map { calendar.startOfDay(for: $0.date) }
+                .filter { shouldSchedule(habit, on: $0, calendar: calendar) }
+        )
 
-        guard let lastCompleted = sortedEntries.first?.date else {
+        guard let lastCompleted = completedDates.max() else {
             habit.currentStreak = 0
             habit.lastCompletedDate = nil
             return
         }
 
         habit.lastCompletedDate = lastCompleted
+        habit.currentStreak = streakEnding(
+            at: lastCompleted,
+            completedDates: completedDates,
+            habit: habit,
+            calendar: calendar
+        )
+        habit.longestStreak = longestStreak(
+            completedDates: completedDates,
+            habit: habit,
+            calendar: calendar
+        )
+    }
 
-        var streak = 0
-        var checkDate = lastCompleted
+    private func longestStreak(
+        completedDates: Set<Date>,
+        habit: Habit,
+        calendar: Calendar
+    ) -> Int {
+        let sortedCompletedDates = completedDates.sorted()
+        var longestStreak = 0
 
-        for entry in sortedEntries {
-            if entry.date.isEqual(with: checkDate) {
-                streak += 1
-                if let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) {
-                    checkDate = previousDay
-                }
-            } else {
-                break
+        for date in sortedCompletedDates {
+            guard shouldSchedule(habit, on: date, calendar: calendar) else {
+                continue
             }
+
+            longestStreak = max(
+                longestStreak,
+                streakEnding(
+                    at: date,
+                    completedDates: completedDates,
+                    habit: habit,
+                    calendar: calendar
+                )
+            )
         }
 
-        habit.currentStreak = streak
-        habit.longestStreak = max(habit.longestStreak, streak)
+        return longestStreak
+    }
+
+    private func streakEnding(
+        at date: Date,
+        completedDates: Set<Date>,
+        habit: Habit,
+        calendar: Calendar
+    ) -> Int {
+        var streak = 0
+        var checkDate = calendar.startOfDay(for: date)
+
+        while completedDates.contains(checkDate) {
+            streak += 1
+
+            guard let previousDate = previousScheduledDate(
+                before: checkDate,
+                habit: habit,
+                calendar: calendar
+            ) else {
+                break
+            }
+
+            checkDate = previousDate
+        }
+
+        return streak
+    }
+
+    private func previousScheduledDate(
+        before date: Date,
+        habit: Habit,
+        calendar: Calendar
+    ) -> Date? {
+        var date = calendar.startOfDay(for: date)
+        let createdDay = calendar.startOfDay(for: habit.createdAt)
+
+        repeat {
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: date) else {
+                return nil
+            }
+
+            date = previousDay
+
+            if date < createdDay {
+                return nil
+            }
+        } while !shouldSchedule(habit, on: date, calendar: calendar)
+
+        return date
+    }
+
+    private func shouldSchedule(
+        _ habit: Habit,
+        on date: Date,
+        calendar: Calendar
+    ) -> Bool {
+        let day = calendar.startOfDay(for: date)
+        let createdDay = calendar.startOfDay(for: habit.createdAt)
+
+        guard day >= createdDay, habit.archivedAt == nil else {
+            return false
+        }
+
+        let weekday = calendar.component(.weekday, from: day) - 1
+
+        switch habit.frequency {
+        case .daily:
+            return true
+        case .weekday:
+            return (1...5).contains(weekday)
+        case .weekend:
+            return weekday == 0 || weekday == 6
+        case .custom:
+            return habit.targetDaysOfWeek.contains(weekday)
+        }
     }
 
     private func save() -> Bool {
