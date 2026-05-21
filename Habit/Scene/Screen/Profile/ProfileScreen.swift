@@ -107,7 +107,7 @@ struct ProfileScreen: View {
 private let previewContainer: ModelContainer = {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     return try! ModelContainer(
-        for: Habit.self, HabitEntry.self, HabitCategory.self, HabitReminder.self, UserProfile.self,
+        for: Habit.self, HabitEntry.self, HabitReminder.self, UserProfile.self,
         configurations: config
     )
 }()

@@ -36,8 +36,6 @@ final class Habit {
     @Relationship(deleteRule: .cascade, inverse: \HabitReminder.habit)
     var reminders: [HabitReminder]
 
-    var category: HabitCategory?
-
     // MARK: - Init
     init(
         name: String,

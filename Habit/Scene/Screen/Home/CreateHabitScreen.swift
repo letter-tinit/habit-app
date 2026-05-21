@@ -364,7 +364,7 @@ struct CreateHabitScreen: View {
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(
-        for: Habit.self, HabitEntry.self, HabitCategory.self, HabitReminder.self, UserProfile.self,
+        for: Habit.self, HabitEntry.self, HabitReminder.self, UserProfile.self,
         configurations: config
     )
 

@@ -1,29 +1,6 @@
 import Foundation
 import SwiftData
 
-// MARK: - HabitCategory
-
-@Model
-final class HabitCategory {
-    var id: UUID
-    var name: String          // e.g. "Health", "Learning", "Fitness"
-    var icon: String          // SF Symbol
-    var colorHex: String
-    var sortOrder: Int
-
-    @Relationship(inverse: \Habit.category)
-    var habits: [Habit]
-
-    init(name: String, icon: String = "folder.fill", colorHex: String = "#888888", sortOrder: Int = 0) {
-        self.id = UUID()
-        self.name = name
-        self.icon = icon
-        self.colorHex = colorHex
-        self.sortOrder = sortOrder
-        self.habits = []
-    }
-}
-
 // MARK: - HabitReminder
 // Supports multiple custom reminder times per habit.
 

@@ -16,7 +16,6 @@ struct HabitApp: App {
         let schema = Schema([
             Habit.self,
             HabitEntry.self,
-            HabitCategory.self,
             HabitReminder.self,
             UserProfile.self
         ])
