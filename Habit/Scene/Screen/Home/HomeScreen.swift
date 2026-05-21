@@ -54,6 +54,9 @@ struct HomeScreen: View {
                             .resizable()
                             .frame(width: 10, height: 10)
                     }
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .fontDesign(.rounded)
                 }
             }
             

@@ -113,7 +113,7 @@ struct WeekView: View {
                             .fontWeight(fontWeight)
 
                         CircularWithTitleProgressView(
-                            progress: 0.5,
+                            progress: habitStore.completionRatio(on: date),
                             title: date.toString(withFormat: .dayNo),
                             tintColor: tintColor,
                             fontWeight: fontWeight
@@ -130,11 +130,12 @@ struct WeekView: View {
                             )
                     }
                     .shadow(
-                        color: isSelected ? Color.rosePink.opacity(0.45) : .clear,
+                        color: isSelected ? Color.rosePink.opacity(0.65) : .clear,
                         radius: 4,
                         y: 4
                     )
                     .scaleEffect(isSelected ? 1.1 : 1)
+                    .padding(.bottom, 10)
                 }
                 
                 if index < dates.count - 1 {
@@ -155,7 +156,7 @@ struct WeekView: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
-        .frame(height: 90)
+        .frame(height: 100)
         .onAppear {
             centerDate = habitStore.selectedDate
         }

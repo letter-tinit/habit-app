@@ -97,6 +97,7 @@ struct HabitItemView: View {
             }
             .padding()
         }
+        .background(Color.init(hex: colorHex).opacity(0.35))
         // MARK: - PLUS BUTTON
         .overlay(alignment: .trailing) {
             Button {

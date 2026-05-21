@@ -13,7 +13,7 @@ struct ProfileScreen: View {
     @State private var title = "Profile"
 
     var body: some View {
-        BaseScreen($title) {
+        BaseScreen($title, backgroundType: .cyan) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     settingsSection

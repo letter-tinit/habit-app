@@ -334,4 +334,104 @@ final class HabitStore {
             return false
         }
     }
+    
+    // MARK: - STATISTICS
+    func monthDates(containing date: Date) -> [Date] {
+        let calendar = AppCalendar.current
+        
+        guard let monthInterval = calendar.dateInterval(of: .month, for: date) else {
+            return []
+        }
+        
+        var dates: [Date] = []
+        var currentDate = calendar.startOfDay(for: monthInterval.start)
+        
+        while currentDate < monthInterval.end {
+            dates.append(currentDate)
+            
+            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+                break
+            }
+            
+            currentDate = nextDate
+        }
+        
+        return dates
+    }
+
+    func completionRatio(on date: Date) -> Double {
+        let calendar = AppCalendar.current
+        let targetDate = calendar.startOfDay(for: date)
+        
+        let scheduledHabits = habits.filter {
+            shouldSchedule($0, on: targetDate, calendar: calendar)
+        }
+        
+        guard !scheduledHabits.isEmpty else {
+            return 0
+        }
+        
+        let totalRatio = scheduledHabits.reduce(0.0) { result, habit in
+            let entry = habit.entries.first {
+                calendar.isDate($0.date, inSameDayAs: targetDate)
+            }
+            
+            guard habit.goalCount > 0 else {
+                return result
+            }
+            
+            let completedCount = entry?.completedCount ?? 0
+            let ratio = min(Double(completedCount) / Double(habit.goalCount), 1.0)
+            
+            return result + ratio
+        }
+        
+        return totalRatio / Double(scheduledHabits.count)
+    }
+
+    func completionRatioForMonth(containing date: Date) -> Double {
+        let dates = monthDates(containing: date)
+        return completionRatio(for: dates)
+    }
+
+    func completionRatioForYear(containing date: Date) -> Double {
+        let calendar = AppCalendar.current
+        
+        guard let yearInterval = calendar.dateInterval(of: .year, for: date) else {
+            return 0
+        }
+        
+        var dates: [Date] = []
+        var currentDate = calendar.startOfDay(for: yearInterval.start)
+        
+        while currentDate < yearInterval.end {
+            dates.append(currentDate)
+            
+            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+                break
+            }
+            
+            currentDate = nextDate
+        }
+        
+        return completionRatio(for: dates)
+    }
+
+    private func completionRatio(for dates: [Date]) -> Double {
+        let validDates = dates.filter { date in
+            habits.contains {
+                shouldSchedule($0, on: date, calendar: AppCalendar.current)
+            }
+        }
+        
+        guard !validDates.isEmpty else {
+            return 0
+        }
+        
+        let totalRatio = validDates.reduce(0.0) { result, date in
+            result + completionRatio(on: date)
+        }
+        
+        return totalRatio / Double(validDates.count)
+    }
 }

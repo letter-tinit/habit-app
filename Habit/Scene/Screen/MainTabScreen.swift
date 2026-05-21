@@ -10,14 +10,17 @@ import SwiftData
 
 enum AppTab: String {
     case home = "Home"
+    case statistic = "Statistic"
     case profile = "Profile"
-    
+
     var symbolImage: String {
         return switch self {
         case .home:
             "figure.run"
+        case .statistic:
+            "heart.text.clipboard"
         case .profile:
-            "person.crop.circle"
+            "person"
         }
     }
     
@@ -25,8 +28,10 @@ enum AppTab: String {
         switch self {
         case .home:
                 .rosePink
+        case .statistic:
+                .emeraldGreen
         case .profile:
-                .aquaCyan
+                .royalBlue
         }
     }
 }
@@ -57,6 +62,12 @@ struct MainTabScreen: View {
             } label: {
                 Image(systemName: AppTab.home.symbolImage)
             }
+            
+            Tab(value: AppTab.statistic) {
+                StatisticalScreen()
+            } label: {
+                Image(systemName: AppTab.statistic.symbolImage)
+            }
 
             Tab(value: AppTab.profile) {
                 ProfileScreen()
@@ -65,6 +76,9 @@ struct MainTabScreen: View {
             }
         }
         .tint(activeTab.tintColor)
+        .onChange(of: activeTab) { _, _ in
+            Haptic.selection()
+        }
     }
 }
 

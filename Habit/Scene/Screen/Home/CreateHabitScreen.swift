@@ -82,7 +82,7 @@ struct CreateHabitScreen: View {
         }
         .animation(.snappy, value: goalType)
     }
-
+    
     private var identitySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Identity")
