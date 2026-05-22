@@ -78,6 +78,9 @@ struct ProfileScreen: View {
                         .fontDesign(.rounded)
                         .frame(width: 38, height: 32)
                         .background(Color.primary.opacity(0.06))
+                        .mask {
+                            RoundedRectangle(cornerRadius: 8)
+                        }
                         .liquidGlassSurface(cornerRadius: 8)
                 }
             }

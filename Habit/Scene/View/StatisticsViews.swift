@@ -30,28 +30,28 @@ struct StatisticsTableHeader: View {
     
     private var weekRangeTitle: String {
         let dates = weekDates
-
+        
         guard let start = dates.first, let end = dates.last else {
             return date.toString(withFormat: .custom("MMM d"))
         }
-
+        
         if AppCalendar.current.isDate(start, equalTo: end, toGranularity: .month) {
             return "\(start.toString(withFormat: .custom("MMM d")))-\(end.toString(withFormat: .custom("d")))"
         }
-
+        
         return "\(start.toString(withFormat: .custom("MMM d")))~\(end.toString(withFormat: .custom("MMM d")))"
     }
-
+    
     private var weekDates: [Date] {
         guard let interval = AppCalendar.current.dateInterval(of: .weekOfYear, for: date) else {
             return []
         }
-
+        
         return (0..<7).compactMap {
             AppCalendar.current.date(byAdding: .day, value: $0, to: interval.start)
         }
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Picker("Statistics", selection: $scope) {
@@ -99,7 +99,7 @@ struct StatisticsTableHeader: View {
     
     private func changePeriod(by value: Int) {
         let component: Calendar.Component
-
+        
         switch scope {
         case .week:
             component = .weekOfYear
@@ -255,24 +255,24 @@ struct WeeklyStatisticsView: View {
     @Environment(HabitStore.self) private var habitStore
     let habit: Habit
     let date: Date
-
+    
     private var weekDates: [Date] {
         habitStore.weekDates(containing: date)
     }
-
+    
     private var weekTitle: String {
         guard let start = weekDates.first, let end = weekDates.last else {
             return "Selected week"
         }
-
+        
         return "\(start.toString(withFormat: .custom("MMM d")))-\(end.toString(withFormat: .custom("MMM d")))"
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
                 let weekProgress = habitStore.completionRatioForWeek(for: habit, containing: date)
-
+                
                 CircularWithTitleProgressView(
                     progress: weekProgress,
                     title: "\(Int(weekProgress * 100))%",
@@ -280,20 +280,20 @@ struct WeeklyStatisticsView: View {
                     tintColor: Color(hex: habit.colorHex),
                     fontWeight: .bold
                 )
-
+                
                 VStack(alignment: .leading, spacing: 4) {
                     Text(weekTitle)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
-
+                    
                     Text("Weekly progress")
                         .font(.caption)
                         .fontDesign(.rounded)
                         .foregroundStyle(.secondary)
                 }
             }
-
+            
             HStack(alignment: .bottom, spacing: 8) {
                 ForEach(weekDates, id: \.self) { day in
                     weekDayColumn(for: day)
@@ -302,38 +302,42 @@ struct WeeklyStatisticsView: View {
             .frame(minHeight: 118)
         }
     }
-
+    
     private func weekDayColumn(for day: Date) -> some View {
-        let progress = habitStore.completionRatio(for: habit, on: day)
         let isScheduled = habitStore.isScheduled(habit, on: day)
-        let displayHeight = max(progress * 68, progress > 0 ? 14 : 0)
-
+        let progress = habitStore.completionRatio(for: habit, on: day)
+        let displayHeight = 68.0
+        
         return VStack(spacing: 7) {
             Text(day.toString(withFormat: .dayNameSymbol))
                 .font(.caption2)
                 .fontWeight(.semibold)
                 .fontDesign(.rounded)
                 .foregroundStyle(.secondary)
-
-            ZStack(alignment: .bottom) {
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(Color.primary.opacity(isScheduled ? 0.06 : 0.025))
-                    .frame(height: 68)
-
-                if progress > 0 {
+            
+            Group {
+                if isScheduled {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .fill(habit.gradient)
-                        .frame(height: displayHeight)
+                        .opacity(progress)
+                } else {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(Color.primary.opacity(0.025))
+                        .overlay {
+                            Image(systemName: "circle.fill")
+                                .font(.system(size: 10))
+                                .fontDesign(.rounded)
+                                .fontWeight(.black)
+                                .foregroundStyle(.tertiary)
+                        }
                 }
             }
-            .overlay(alignment: .center) {
-                if progress == 0 {
-                    Circle()
-                        .fill(isScheduled ? Color.primary.opacity(0.16) : Color.clear)
-                        .frame(width: 6, height: 6)
-                }
+            .frame(height: displayHeight)
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 2)
             }
-
+            
             Text(day.toString(withFormat: .dayNo))
                 .font(.caption2)
                 .fontWeight(day.isToday() ? .bold : .regular)
@@ -404,13 +408,22 @@ struct MonthlyStatisticsView: View {
                 
                 ForEach(Array(paddedDates.enumerated()), id: \.offset) { _, date in
                     if let date {
-                        let isComplete = habitStore.isComplete(for: habit, on: date)
+                        let progress = habitStore.completionRatio(for: habit, on: date)
+                        let isScheduled = habitStore.isScheduled(habit, on: date)
                         ZStack(alignment: .center) {
                             Group {
-                                if isComplete {
+                                if isScheduled {
                                     habit.gradient
+                                        .opacity(progress)
                                 } else {
-                                    Color.primary.opacity(0.08)
+                                    Color.primary.opacity(0.025)
+                                        .overlay {
+                                            Image(systemName: "circle.fill")
+                                                .font(.system(size: 10))
+                                                .fontDesign(.rounded)
+                                                .fontWeight(.black)
+                                                .foregroundStyle(.tertiary)
+                                        }
                                 }
                             }
                             .clipShape(RoundedRectangle(cornerRadius: itemSpacing))
@@ -420,7 +433,12 @@ struct MonthlyStatisticsView: View {
                                 .font(.caption2)
                                 .fontWeight(.semibold)
                                 .fontDesign(.rounded)
-                                .foregroundStyle(isComplete ? .black.opacity(0.72) : .primary.opacity(0.78))
+                                .foregroundStyle(.primary.opacity(progress))
+                                .opacity(isScheduled ? 1 : 0)
+                        }
+                        .overlay {
+                            RoundedRectangle(cornerRadius: itemSpacing)
+                                .stroke(Color.primary.opacity(0.1), lineWidth: 2)
                         }
                     } else {
                         Color.clear
@@ -556,28 +574,29 @@ struct YearlyStatisticsView: View {
         let calendar = AppCalendar.current
         let isCurrentYear = calendar.isDate(date, equalTo: self.date, toGranularity: .year)
         let progress = habitStore.completionRatio(for: habit, on: date)
+        let isScheduled = habitStore.isScheduled(habit, on: date)
         
-        return RoundedRectangle(cornerRadius: 2)
-            .fill(isCurrentYear ? blockColor(for: progress) : Color.clear)
-            .frame(width: cellSize, height: cellSize)
-            .overlay {
+        return Group {
+            if isScheduled {
                 RoundedRectangle(cornerRadius: 2)
-                    .stroke(Color.primary.opacity(isCurrentYear ? 0.10 : 0), lineWidth: 0.5)
+                    .fill(habit.gradient)
+                    .opacity(progress)
+            } else {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.primary.opacity(0.025))
+                    .overlay {
+                        Image(systemName: "circle.fill")
+                            .font(.system(size: 2))
+                            .fontDesign(.rounded)
+                            .fontWeight(.regular)
+                            .foregroundStyle(.tertiary)
+                    }
             }
-    }
-    
-    private func blockColor(for progress: Double) -> Color {
-        switch progress {
-        case 0:
-                .primary.opacity(0.10)
-        case 0..<0.25:
-                .rosePink.opacity(0.55)
-        case 0.25..<0.5:
-                .sunsetOrange.opacity(0.75)
-        case 0.5..<0.75:
-                .goldenYellow.opacity(0.85)
-        default:
-                .emeraldGreen
+        }
+        .frame(width: cellSize, height: cellSize)
+        .overlay {
+            RoundedRectangle(cornerRadius: 2)
+                .stroke(Color.primary.opacity(isCurrentYear ? 0.10 : 0), lineWidth: 0.5)
         }
     }
     

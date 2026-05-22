@@ -38,32 +38,12 @@ struct HomeScreen: View {
                 }
                 // MARK: - List Configure
                 .listRowSpacing(20)
-                .contentMargins(.top, 20)
-                
-                Spacer()
+                .contentMargins(.vertical, 20)
+                .scrollIndicators(.hidden)
             }
         }
         // MARK: - BaseScreen Configure
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    Haptic.impact(.medium)
-                } label: {
-                    HStack {
-                        Text("All")
-                        
-                        Image(systemName: "arrow.down")
-                            .resizable()
-                            .frame(width: 10, height: 10)
-                    }
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .fontDesign(.rounded)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                }
-            }
-            
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Haptic.impact(.medium)

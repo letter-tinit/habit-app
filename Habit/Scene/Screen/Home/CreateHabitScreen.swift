@@ -139,29 +139,34 @@ struct CreateHabitScreen: View {
                 Text("Weekend").tag(HabitFrequency.weekend)
                 Text("Custom").tag(HabitFrequency.custom)
             }
-            .pickerStyle(.menu)
+            .pickerStyle(.segmented)
             .onChange(of: frequency) { _, newValue in
                 applyDefaultDays(for: newValue)
             }
             
-            if frequency == .custom {
-                HStack(spacing: 8) {
-                    ForEach(habitStore.orderedWeekdays, id: \.self) { weekday in
-                        Button {
-                            toggleWeekday(weekday)
-                        } label: {
-                            Text(shortWeekdayName(for: weekday))
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .fontDesign(.rounded)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 38)
-                                .foregroundStyle(selectedDays.contains(weekday) ? .white : .primary)
-                                .background(selectedDays.contains(weekday) ? Color.rosePink.opacity(0.68) : Color.primary.opacity(0.06))
-                                .liquidGlassSurface(cornerRadius: 8, interactive: true)
-                        }
-                        .buttonStyle(.plain)
+            HStack(spacing: 8) {
+                ForEach(habitStore.orderedWeekdays, id: \.self) { weekday in
+                    Button {
+                        toggleWeekday(weekday)
+                    } label: {
+                        Text(shortWeekdayName(for: weekday))
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .fontDesign(.rounded)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 38)
+                            .foregroundStyle(selectedDays.contains(weekday) ? .white : .primary)
+                            .background(
+                                selectedDays.contains(weekday)
+                                ? Color.rosePink.opacity(0.68)
+                                : Color.primary.opacity(0.06)
+                            )
+                            . mask {
+                                RoundedRectangle(cornerRadius: 8)
+                            }
+                            .liquidGlassSurface(cornerRadius: 8, interactive: true)
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }

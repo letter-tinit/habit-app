@@ -144,7 +144,6 @@ struct WeekView: View {
                         y: 4
                     )
                     .scaleEffect(isSelected ? 1.1 : 1)
-                    .padding(.bottom, 10)
                 }
                 
                 if index < dates.count - 1 {
@@ -152,20 +151,24 @@ struct WeekView: View {
                 }
             }
         }
-        .padding(.horizontal, 3)
+        .padding()
     }
 
     var body: some View {
         let weekStartsOnMonday = habitStore.weekStartsOnMonday
         
-        TabView(selection: $weekPage) {
-            ForEach(-1...1, id: \.self) { page in
-                weekRow(for: page, weekStartsOnMonday: weekStartsOnMonday)
-                    .tag(page)
+        weekRow(for: 0, weekStartsOnMonday: weekStartsOnMonday)
+            .hidden()
+            .accessibilityHidden(true)
+            .overlay {
+                TabView(selection: $weekPage) {
+                    ForEach(-1...1, id: \.self) { page in
+                        weekRow(for: page, weekStartsOnMonday: weekStartsOnMonday)
+                            .tag(page)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
             }
-        }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .frame(height: 118)
         .onAppear {
             centerDate = habitStore.selectedDate
         }

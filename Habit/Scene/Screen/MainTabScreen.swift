@@ -37,7 +37,7 @@ enum AppTab: String {
 }
 
 struct MainTabScreen: View {
-    @State private var activeTab: AppTab = .statistic
+    @State private var activeTab: AppTab = .home
     @State private var homeRouter = HomeRouter()
     
     var body: some View {

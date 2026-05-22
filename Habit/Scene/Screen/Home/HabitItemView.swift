@@ -60,6 +60,7 @@ struct HabitItemView: View {
         ZStack {
             // MARK: - PROGRESS LAYER
             gradient
+                .opacity(0.6)
                 .clipShape(
                     .rect(
                         topLeadingRadius: cornerRadius,
