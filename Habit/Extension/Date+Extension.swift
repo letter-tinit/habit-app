@@ -8,6 +8,7 @@
 import Foundation
 
 enum DateFormat {
+    case dayNameSymbol // T (Tuesday)
     case dayName // Tu (Tuesday)
     case dayNo // 26 (Number of day only)
     case dayNameWithNo // Tue, 26 (combine of day number and day name)
@@ -15,6 +16,8 @@ enum DateFormat {
     
     var value: String {
         switch self {
+        case .dayNameSymbol:
+            "EEEEE"
         case .dayName:
             "EEEEEE"
         case .dayNo:

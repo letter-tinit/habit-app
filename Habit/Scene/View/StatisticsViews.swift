@@ -12,139 +12,301 @@ enum StatisticsScope: String, CaseIterable {
     case year = "Year"
 }
 
-struct StatisticsOverviewView: View {
-    @Environment(HabitStore.self) private var habitStore
+struct StatisticsTableHeader: View {
     @Binding var scope: StatisticsScope
-
+    @Binding var date: Date
+    
+    private var periodTitle: String {
+        switch scope {
+        case .month:
+            date.toString(withFormat: .custom("MMMM yyyy"))
+        case .year:
+            date.toString(withFormat: .custom("yyyy"))
+        }
+    }
+    
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Statistics")
-                    .font(.headline)
-                    .fontDesign(.rounded)
-
-                Spacer()
-
-                Picker("Statistics", selection: $scope) {
-                    ForEach(StatisticsScope.allCases, id: \.self) { scope in
-                        Text(scope.rawValue).tag(scope)
-                    }
+        VStack(alignment: .leading, spacing: 12) {
+            Picker("Statistics", selection: $scope) {
+                ForEach(StatisticsScope.allCases, id: \.self) { scope in
+                    Text(scope.rawValue).tag(scope)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 150)
             }
-
-            switch scope {
-            case .month:
-                MonthlyStatisticsView(date: habitStore.selectedDate)
-            case .year:
-                YearlyStatisticsView(date: habitStore.selectedDate)
+            .pickerStyle(.segmented)
+            
+            HStack(spacing: 12) {
+                Button {
+                    changePeriod(by: -1)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.caption.weight(.bold))
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                
+                Text(periodTitle)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .fontDesign(.rounded)
+                    .frame(maxWidth: .infinity)
+                
+                Button {
+                    changePeriod(by: 1)
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding()
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+        .liquidGlassSurface(cornerRadius: 18)
+    }
+    
+    private func changePeriod(by value: Int) {
+        let component: Calendar.Component = scope == .month ? .month : .year
+        
+        guard let newDate = AppCalendar.current.date(byAdding: component, value: value, to: date) else {
+            return
+        }
+        
+        baseAnimation {
+            Haptic.selection()
+            date = newDate
+        }
+    }
+}
+
+struct StatisticsOverviewView: View {
+    @Environment(HabitStore.self) private var habitStore
+    let habit: Habit
+    let scope: StatisticsScope
+    let date: Date
+    
+    private var summary: HabitStatisticSummary {
+        habitStore.statisticSummary(for: habit, scope: scope, containing: date)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 12) {
+                Text(habit.emoji)
+                    .font(.title3)
+                    .frame(width: 42, height: 42)
+                    .background(Color(hex: habit.colorHex).opacity(0.30))
+                    .clipShape(.circle)
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(habit.name)
+                        .font(.headline)
+                        .fontDesign(.rounded)
+                    
+                    Text("\(habit.currentStreak) current streak")
+                        .font(.caption)
+                        .fontDesign(.rounded)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+            }
+            
+            StatisticSummaryTable(summary: summary, habit: habit)
+            
+            switch scope {
+            case .month:
+                MonthlyStatisticsView(habit: habit, date: date)
+            case .year:
+                YearlyStatisticsView(habit: habit, date: date)
+            }
+        }
+        .padding()
+        .liquidGlassSurface(cornerRadius: 18, interactive: false)
+    }
+}
+
+struct StatisticSummaryTable: View {
+    let summary: HabitStatisticSummary
+    let habit: Habit
+    
+    private var progressText: String {
+        "\(Int(summary.progress * 100))%"
+    }
+    
+    private var completedDaysText: String {
+        "\(summary.completedDays)/\(summary.scheduledDays)"
+    }
+    
+    private var totalProgressText: String {
+        if habit.goalType == .count {
+            "\(summary.totalCompletedCount)/\(summary.totalTargetCount) \(habit.goalUnit)"
+        } else {
+            "\(summary.totalCompletedCount)/\(summary.totalTargetCount)"
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            statisticRow(title: "Progress", value: progressText)
+            
+            Divider().opacity(0.35)
+            
+            statisticRow(title: "Completed days", value: completedDaysText)
+            
+            Divider().opacity(0.35)
+            
+            statisticRow(title: "Total", value: totalProgressText)
+            
+            Divider().opacity(0.35)
+            
+            HStack {
+                statisticColumn(title: "Current streak", value: "\(habit.currentStreak)")
+                
+                Divider().opacity(0.35)
+                
+                statisticColumn(title: "Best streak", value: "\(habit.longestStreak)")
+            }
+            .frame(minHeight: 46)
+        }
+        .fontDesign(.rounded)
+        .padding(.vertical, 2)
+    }
+    
+    private func statisticRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            Spacer(minLength: 12)
+            
+            Text(value)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.trailing)
+        }
+        .frame(minHeight: 32)
+    }
+    
+    private func statisticColumn(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            
+            Text(value)
+                .font(.caption)
+                .fontWeight(.semibold)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
 struct MonthlyStatisticsView: View {
     @Environment(HabitStore.self) private var habitStore
+    let habit: Habit
     let date: Date
-
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
-
+    
+    private let itemSpacing: CGFloat = AppConstant.screenWidth / 40
+    
     private var monthTitle: String {
         date.toString(withFormat: .custom("MMMM yyyy"))
     }
-
+    
     private var paddedDates: [Date?] {
         guard let firstDate = habitStore.monthDates(containing: date).first else {
             return []
         }
-
+        
         let weekday = AppCalendar.current.component(.weekday, from: firstDate) - 1
         let leadingEmptyDays = habitStore.orderedWeekdays.firstIndex(of: weekday) ?? 0
-
+        
         return Array(repeating: nil, count: leadingEmptyDays) + habitStore.monthDates(containing: date).map(Optional.some)
     }
-
+    
     var body: some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: itemSpacing), count: 7)
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
+                let monthProgress = habitStore.completionRatioForMonth(for: habit, containing: date)
+                
                 CircularWithTitleProgressView(
-                    progress: habitStore.completionRatioForMonth(containing: date),
-                    title: "\(Int(habitStore.completionRatioForMonth(containing: date) * 100))%",
+                    progress: monthProgress,
+                    title: "\(Int(monthProgress * 100))%",
                     size: 52,
-                    tintColor: .rosePink,
+                    tintColor: Color(hex: habit.colorHex),
                     fontWeight: .bold
                 )
-
+                
                 VStack(alignment: .leading, spacing: 4) {
                     Text(monthTitle)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
-
+                    
                     Text("Monthly progress")
                         .font(.caption)
                         .fontDesign(.rounded)
                         .foregroundStyle(.secondary)
                 }
             }
-
-            LazyVGrid(columns: columns, spacing: 10) {
+            
+            LazyVGrid(columns: columns, spacing: itemSpacing) {
                 ForEach(habitStore.orderedWeekdays, id: \.self) { weekday in
                     Text(shortWeekdayName(for: weekday))
-                        .font(.caption2)
+                        .font(.caption)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                 }
-
+                
                 ForEach(Array(paddedDates.enumerated()), id: \.offset) { _, date in
                     if let date {
-                        let progress = habitStore.completionRatio(on: date)
-                        let isSelected = habitStore.isSelectedDay(date)
-
-                        Button {
-                            baseAnimation {
-                                habitStore.didChangeSelecteDate(date)
+                        let isComplete = habitStore.isComplete(for: habit, on: date)
+                        ZStack(alignment: .center) {
+                            Group {
+                                if isComplete {
+                                    habit.gradient
+                                } else {
+                                    Color.primary.opacity(0.08)
+                                }
                             }
-                        } label: {
-                            CircularWithTitleProgressView(
-                                progress: progress,
-                                title: date.toString(withFormat: .dayNo),
-                                size: 34,
-                                tintColor: tintColor(for: progress),
-                                fontWeight: isSelected ? .bold : .regular
-                            )
-                            .foregroundStyle(isSelected ? Color.rosePink : .primary)
+                            .clipShape(RoundedRectangle(cornerRadius: itemSpacing))
+                            .aspectRatio(1, contentMode: .fit)
+                            
+                            Text(date.toString(withFormat: .dayNo))
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                                .fontDesign(.rounded)
+                                .foregroundStyle(isComplete ? .black.opacity(0.72) : .primary.opacity(0.78))
                         }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity)
                     } else {
                         Color.clear
-                            .frame(width: 34, height: 34)
-                            .frame(maxWidth: .infinity)
+                            .aspectRatio(1, contentMode: .fit)
                     }
                 }
             }
+            .padding(.bottom, 10)
         }
     }
-
+    
     private func tintColor(for progress: Double) -> Color {
         switch progress {
         case 0:
-            .warmGray.opacity(0.35)
+                .warmGray.opacity(0.35)
         case 0..<0.34:
-            .sunsetOrange
+                .sunsetOrange
         case 0.34..<0.67:
-            .goldenYellow
+                .goldenYellow
         default:
-            .emeraldGreen
+                .emeraldGreen
         }
     }
-
+    
     private func shortWeekdayName(for weekday: Int) -> String {
         switch weekday {
         case 0: "Sun"
@@ -161,14 +323,15 @@ struct MonthlyStatisticsView: View {
 
 struct YearlyStatisticsView: View {
     @Environment(HabitStore.self) private var habitStore
+    let habit: Habit
     let date: Date
-
+    
     private let cellSize: CGFloat = 10
-
+    
     private var yearTitle: String {
         date.toString(withFormat: .custom("yyyy"))
     }
-
+    
     private var weeks: [[Date]] {
         let calendar = AppCalendar.current
         guard
@@ -179,50 +342,52 @@ struct YearlyStatisticsView: View {
         else {
             return []
         }
-
+        
         var weeks: [[Date]] = []
         var currentDate = calendar.startOfDay(for: startWeek.start)
-
+        
         while currentDate < endWeek.end {
             let week = (0..<7).compactMap {
                 calendar.date(byAdding: .day, value: $0, to: currentDate)
             }
             weeks.append(week)
-
+            
             guard let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: currentDate) else {
                 break
             }
-
+            
             currentDate = nextWeek
         }
-
+        
         return weeks
     }
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
+                let yearProgress = habitStore.completionRatioForYear(for: habit, containing: date)
+                
                 CircularWithTitleProgressView(
-                    progress: habitStore.completionRatioForYear(containing: date),
-                    title: "\(Int(habitStore.completionRatioForYear(containing: date) * 100))%",
+                    progress: yearProgress,
+                    title: "\(Int(yearProgress * 100))%",
                     size: 52,
-                    tintColor: .emeraldGreen,
+                    tintColor: Color(hex: habit.colorHex),
                     fontWeight: .bold
                 )
-
+                
                 VStack(alignment: .leading, spacing: 4) {
                     Text(yearTitle)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
-
+                    
                     Text("Yearly progress")
                         .font(.caption)
                         .fontDesign(.rounded)
                         .foregroundStyle(.secondary)
                 }
             }
-
+            
             AppScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 8) {
                     VStack(alignment: .trailing, spacing: 4) {
@@ -233,7 +398,7 @@ struct YearlyStatisticsView: View {
                                 .frame(width: 18, height: cellSize)
                         }
                     }
-
+                    
                     HStack(alignment: .top, spacing: 4) {
                         ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
                             VStack(spacing: 4) {
@@ -248,36 +413,36 @@ struct YearlyStatisticsView: View {
             }
         }
     }
-
+    
     private func contributionCell(for date: Date) -> some View {
         let calendar = AppCalendar.current
         let isCurrentYear = calendar.isDate(date, equalTo: self.date, toGranularity: .year)
-        let progress = habitStore.completionRatio(on: date)
-
+        let progress = habitStore.completionRatio(for: habit, on: date)
+        
         return RoundedRectangle(cornerRadius: 2)
             .fill(isCurrentYear ? blockColor(for: progress) : Color.clear)
             .frame(width: cellSize, height: cellSize)
             .overlay {
                 RoundedRectangle(cornerRadius: 2)
-                    .stroke(Color.black.opacity(isCurrentYear ? 0.08 : 0), lineWidth: 0.5)
+                    .stroke(Color.primary.opacity(isCurrentYear ? 0.10 : 0), lineWidth: 0.5)
             }
     }
-
+    
     private func blockColor(for progress: Double) -> Color {
         switch progress {
         case 0:
-            .white.opacity(0.55)
+                .primary.opacity(0.10)
         case 0..<0.25:
-            .rosePink.opacity(0.55)
+                .rosePink.opacity(0.55)
         case 0.25..<0.5:
-            .sunsetOrange.opacity(0.75)
+                .sunsetOrange.opacity(0.75)
         case 0.5..<0.75:
-            .goldenYellow.opacity(0.85)
+                .goldenYellow.opacity(0.85)
         default:
-            .emeraldGreen
+                .emeraldGreen
         }
     }
-
+    
     private func shortWeekdayName(for weekday: Int) -> String {
         switch weekday {
         case 0: "S"

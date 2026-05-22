@@ -18,6 +18,7 @@ struct HomeScreen: View {
             VStack(spacing: 0) {
                 WeekView()
                     .padding(.horizontal)
+                    .padding(.top, 10)
                 
                 AppList {
                     ForEach(habitStore.filteredHabit, id: \.id) { habit in
@@ -46,6 +47,7 @@ struct HomeScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button {
+                    Haptic.impact(.medium)
                 } label: {
                     HStack {
                         Text("All")
@@ -57,20 +59,26 @@ struct HomeScreen: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .fontDesign(.rounded)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
                 }
             }
             
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    Haptic.impact(.medium)
                     router.push(.createHabit)
                 } label: {
                     Image(systemName: "plus")
+                        .fontWeight(.bold)
+                        .frame(width: 30, height: 30)
                 }
             }
             
             ToolbarItem(placement: .title) {
                 Button {
-                    
+                    Haptic.selection()
+                    habitStore.backToday()
                 } label: {
                     Text(habitStore.homeTitle)
                         .font(.headline)

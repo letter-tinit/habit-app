@@ -37,7 +37,7 @@ enum AppTab: String {
 }
 
 struct MainTabScreen: View {
-    @State private var activeTab: AppTab = .home
+    @State private var activeTab: AppTab = .statistic
     @State private var homeRouter = HomeRouter()
     
     var body: some View {
@@ -46,17 +46,14 @@ struct MainTabScreen: View {
                 AppNavigationStack(path: $homeRouter.path) {
                     HomeScreen()
                         .environment(homeRouter)
-                        .tint(.black)
                 } destination: { route in
                     switch route {
                     case .habitDetail(let habitID):
                         HabitDetailScreen(habitID: habitID)
                             .environment(homeRouter)
-                            .tint(.black)
                     case .createHabit:
                         CreateHabitScreen()
                             .environment(homeRouter)
-                            .tint(.black)
                     }
                 }
             } label: {
@@ -76,6 +73,7 @@ struct MainTabScreen: View {
             }
         }
         .tint(activeTab.tintColor)
+        .toolbarBackground(.hidden, for: .tabBar)
         .onChange(of: activeTab) { _, _ in
             Haptic.selection()
         }
@@ -90,7 +88,6 @@ struct MainTabScreen: View {
     )
 
     MainTabScreen()
-        .tint(.black)
         .modelContainer(container)
         .environment(HabitStore(modelContext: container.mainContext))
 }

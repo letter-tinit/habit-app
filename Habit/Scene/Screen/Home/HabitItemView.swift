@@ -17,6 +17,7 @@ struct HabitItemView: View {
     private let name: String
     private let emoji: String
     private let colorHex: String
+    private let gradient: LinearGradient
     private let goalType: GoalType
     private let goalCount: Int
     private let goalUnit: String
@@ -43,6 +44,7 @@ struct HabitItemView: View {
         self.name = habit.name
         self.emoji = habit.emoji
         self.colorHex = habit.colorHex
+        self.gradient = habit.gradient
         self.goalType = habit.goalType
         self.goalCount = habit.goalCount
         self.goalUnit = habit.goalUnit
@@ -57,7 +59,7 @@ struct HabitItemView: View {
     var body: some View {
         ZStack {
             // MARK: - PROGRESS LAYER
-            Color.init(hex: colorHex).opacity(0.35)
+            gradient
                 .clipShape(
                     .rect(
                         topLeadingRadius: cornerRadius,
@@ -72,7 +74,7 @@ struct HabitItemView: View {
             HStack {
                 Text(emoji)
                     .padding(5)
-                    .background()
+                    .background(Color.primary.opacity(0.10))
                     .clipShape(RoundedRectangle(cornerRadius: 4))
                 
                 VStack(alignment: .leading) {
@@ -88,7 +90,11 @@ struct HabitItemView: View {
                             .padding(.horizontal, 4)
                             .background(
                                 RoundedRectangle(cornerRadius: 3)
-                                    .stroke(lineWidth: 0.4)
+                                    .fill(Color.primary.opacity(0.06))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 3)
+                                            .stroke(Color.primary.opacity(0.20), lineWidth: 0.4)
+                                    }
                             )
                     }
                 }
@@ -97,7 +103,6 @@ struct HabitItemView: View {
             }
             .padding()
         }
-        .background(Color.init(hex: colorHex).opacity(0.35))
         // MARK: - PLUS BUTTON
         .overlay(alignment: .trailing) {
             Button {
@@ -117,8 +122,7 @@ struct HabitItemView: View {
             .padding(8)
             .buttonStyle(.plain)
             .glassEffect(
-                .regular
-                    .interactive(),
+                .regular,
                 in: .circle
             )
             .padding(.horizontal, 10)
@@ -129,25 +133,26 @@ struct HabitItemView: View {
         .mask {
             RoundedRectangle(cornerRadius: cornerRadius)
         }
-        .glassEffect(
-            .regular
-                .interactive(),
-            in: .rect(cornerRadius: cornerRadius)
-        )
+        .liquidGlassSurface(cornerRadius: cornerRadius, interactive: true)
         // MARK: - Action
         .sheet(isPresented: $showNumberPad) {
-            NumberPadSheet(
-                habitName: name,
-                unit: goalUnit,
-                current: completedCount,
-                goal: goalCount
-            ) { value in
-                baseAnimation {
-                    let newCount = completedCount + value
-                    Haptic.impact()
-                    handleAction(.progressChanged(newCount))
+            ZStack {
+                Color.primary.opacity(0.02).ignoresSafeArea()
+                
+                NumberPadSheet(
+                    habitName: name,
+                    unit: goalUnit,
+                    current: completedCount,
+                    goal: goalCount
+                ) { value in
+                    baseAnimation {
+                        let newCount = completedCount + value
+                        Haptic.impact()
+                        handleAction(.progressChanged(newCount))
+                    }
                 }
             }
+            .presentationBackground(.ultraThinMaterial)
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
@@ -221,9 +226,8 @@ struct NumberPadSheet: View {
                     .fontDesign(.rounded)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color.secondary.opacity(0.2))
-                    .foregroundStyle(.secondary)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .foregroundStyle(.primary)
+                    .liquidGlassSurface(cornerRadius: 14, interactive: true)
                     .animation(.snappy, value: parsedValue)
             }
             .padding(.horizontal, 4)
@@ -260,8 +264,7 @@ struct NumberPadKey: View {
                 .fontDesign(.rounded)
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
-                .background(.quaternary.opacity(0.6))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .liquidGlassSurface(cornerRadius: 12, interactive: true)
         }
         .buttonStyle(.plain)
     }

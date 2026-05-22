@@ -18,54 +18,29 @@ struct BaseScreen<Content: View>: View {
         case custom(LinearGradient)
     }
     
-    private var backgroundGradient: LinearGradient {
+    private var backgroundHighlights: [Color] {
         switch backgroundType {
         case .mintCyan:
-            return LinearGradient(
-                gradient: Gradient(stops: [
-                    .init(color: Color(red: 0.95, green: 1.0, blue: 0.98), location: 0.0),  // soft mint white
-                    .init(color: Color(red: 0.88, green: 1.0, blue: 0.96), location: 0.3),  // pastel mint
-                    .init(color: Color(red: 0.84, green: 0.98, blue: 1.0), location: 0.65), // light cyan
-                    .init(color: Color(red: 0.78, green: 0.95, blue: 1.0), location: 1.0)   // soft aqua cyan
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            [.turquoise, .skyBlue, .rosePink]
         case .mint:
-            return LinearGradient(
-                gradient: Gradient(stops: [
-                    .init(color: Color(red: 0.96, green: 1.0, blue: 0.98), location: 0.0),
-                    .init(color: Color(red: 0.88, green: 1.0, blue: 0.94), location: 0.4),
-                    .init(color: Color(red: 0.76, green: 0.96, blue: 0.88), location: 1.0)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            [.emeraldGreen, .turquoise, .goldenYellow]
         case .cyan:
-            return LinearGradient(
-                gradient: Gradient(stops: [
-                    .init(color: Color(red: 0.95, green: 0.99, blue: 1.0), location: 0.0),
-                    .init(color: Color(red: 0.85, green: 0.97, blue: 1.0), location: 0.4),
-                    .init(color: Color(red: 0.72, green: 0.93, blue: 1.0), location: 1.0)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            [.skyBlue, .turquoise, .royalBlue]
         case .lightPink:
-            return LinearGradient(
-                colors: [
-                    Color(red: 1.0, green: 0.985, blue: 0.99), // ultra light pink
-                    Color(red: 1.0, green: 0.975, blue: 0.985), // soft airy blush
-                    Color(red: 1.0, green: 0.965, blue: 0.98), // subtle pastel pink
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .custom(let linearGradient):
-            return linearGradient
+            [.rosePink, .skyBlue, .sunsetOrange]
+        case .custom:
+            [.turquoise, .rosePink, .goldenYellow]
         }
     }
     
+    private var customBackgroundWash: LinearGradient? {
+        guard case let .custom(gradient) = backgroundType else {
+            return nil
+        }
+
+        return gradient
+    }
+
     // MARK: - Property
     @Binding private var title: String
     private var backgroundType: BackgroundGradientType
@@ -83,8 +58,10 @@ struct BaseScreen<Content: View>: View {
     
     var body: some View {
         ZStack {
-            backgroundGradient
-                .ignoresSafeArea()
+            LiquidGlassBackdrop(
+                highlights: backgroundHighlights,
+                customWash: customBackgroundWash
+            )
             
             content()
                 .dismissKeyboardOnTap()
@@ -100,5 +77,109 @@ struct BaseScreen<Content: View>: View {
                 }
             }
         }
+    }
+}
+
+private struct LiquidGlassBackdrop: View {
+    let highlights: [Color]
+    let customWash: LinearGradient?
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        ZStack {
+            baseColor
+
+            LinearGradient(
+                colors: baseGradientColors,
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            MeshGradient(
+                width: 3,
+                height: 3,
+                points: [
+                    [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
+                    [0.0, 0.44], [0.48, 0.36], [1.0, 0.52],
+                    [0.0, 1.0], [0.58, 0.92], [1.0, 1.0]
+                ],
+                colors: [
+                    meshTint(highlights[0], darkOpacity: 0.46, lightOpacity: 0.32),
+                    meshNeutral,
+                    meshTint(highlights[1], darkOpacity: 0.34, lightOpacity: 0.26),
+                    meshBase,
+                    meshTint(highlights[2], darkOpacity: 0.26, lightOpacity: 0.20),
+                    meshBase,
+                    meshTint(highlights[1], darkOpacity: 0.14, lightOpacity: 0.12),
+                    meshBase,
+                    meshTint(highlights[0], darkOpacity: 0.22, lightOpacity: 0.16)
+                ]
+            )
+            .blur(radius: 18)
+            .saturation(1.25)
+
+            if let customWash {
+                customWash
+                    .blendMode(.screen)
+                    .opacity(0.32)
+            }
+
+            LinearGradient(
+                colors: [
+                    Color.white.opacity(0.22),
+                    Color.clear,
+                    Color.white.opacity(0.04),
+                    Color.clear
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .blendMode(.screen)
+            .mask {
+                Rectangle()
+                    .rotationEffect(.degrees(-14))
+                    .padding(.horizontal, -80)
+            }
+            .opacity(0.48)
+
+            backdropShade
+        }
+        .ignoresSafeArea()
+    }
+
+    private var baseColor: Color {
+        colorScheme == .dark ? .black : Color(red: 0.93, green: 0.96, blue: 0.99)
+    }
+
+    private var baseGradientColors: [Color] {
+        if colorScheme == .dark {
+            [
+                Color(red: 0.14, green: 0.15, blue: 0.19),
+                Color(red: 0.03, green: 0.03, blue: 0.05),
+                .black
+            ]
+        } else {
+            [
+                Color.white,
+                Color(red: 0.91, green: 0.96, blue: 0.99),
+                Color(red: 0.97, green: 0.94, blue: 0.98)
+            ]
+        }
+    }
+
+    private var meshBase: Color {
+        colorScheme == .dark ? .black : Color.white.opacity(0.72)
+    }
+
+    private var meshNeutral: Color {
+        colorScheme == .dark ? Color.white.opacity(0.10) : Color.white.opacity(0.82)
+    }
+
+    private var backdropShade: Color {
+        colorScheme == .dark ? Color.black.opacity(0.24) : Color.white.opacity(0.12)
+    }
+
+    private func meshTint(_ color: Color, darkOpacity: Double, lightOpacity: Double) -> Color {
+        color.opacity(colorScheme == .dark ? darkOpacity : lightOpacity)
     }
 }

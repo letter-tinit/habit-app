@@ -42,7 +42,7 @@ struct ProfileScreen: View {
             .font(.body)
             .fontDesign(.rounded)
             .padding()
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+            .liquidGlassSurface(cornerRadius: 16, interactive: true)
         }
     }
 
@@ -59,7 +59,7 @@ struct ProfileScreen: View {
                 frequencyRow(title: "Custom", days: habitStore.orderedWeekdays)
             }
             .padding()
-            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+            .liquidGlassSurface(cornerRadius: 16, interactive: true)
         }
     }
 
@@ -77,8 +77,8 @@ struct ProfileScreen: View {
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
                         .frame(width: 38, height: 32)
-                        .background(Color.white.opacity(0.55))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .background(Color.primary.opacity(0.06))
+                        .liquidGlassSurface(cornerRadius: 8)
                 }
             }
         }

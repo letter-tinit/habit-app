@@ -8,17 +8,41 @@
 import SwiftUI
 
 struct StatisticalScreen: View {
+    @Environment(HabitStore.self) private var habitStore
     @State private var statisticsScope: StatisticsScope = .month
+    @State private var statisticsDate: Date = Date()
     @State private var title: String = "Statistical"
 
     var body: some View {
         BaseScreen($title, backgroundType: .mint) {
-            VStack {
-                StatisticsOverviewView(scope: $statisticsScope)
-                    .padding(.horizontal)
-                    .padding(.top, 14)
-                
-                Spacer()
+            if habitStore.habits.isEmpty {
+                ContentUnavailableView(
+                    "No Habits",
+                    systemImage: "chart.bar.xaxis",
+                    description: Text("Create a habit to view statistics.")
+                )
+            } else {
+                VStack(spacing: 14) {
+                    StatisticsTableHeader(scope: $statisticsScope, date: $statisticsDate)
+                        .padding(.horizontal)
+                        .padding(.top, 14)
+                        .onChange(of: statisticsScope) { _, _ in
+                            Haptic.selection()
+                        }
+
+                    AppScrollView {
+                        LazyVStack(spacing: 14) {
+                            ForEach(habitStore.habits, id: \.id) { habit in
+                                StatisticsOverviewView(
+                                    habit: habit,
+                                    scope: statisticsScope,
+                                    date: statisticsDate
+                                )
+                            }
+                        }
+                        .padding()
+                    }
+                }
             }
         }
     }

@@ -12,7 +12,7 @@ struct CreateHabitScreen: View {
     @Environment(HabitStore.self) private var habitStore
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isFocused: Bool
-
+    
     @State private var screenTitle = "New Habit"
     @State private var name = "Habit Name"
     @State private var emoji = "⭐"
@@ -23,25 +23,25 @@ struct CreateHabitScreen: View {
     @State private var goalType: GoalType = .todo
     @State private var goalCountText = "1"
     @State private var goalUnit = "times"
-
+    
     private let colorOptions = AppConstant.colorOptions
-
+    
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-
+    
     private var trimmedEmoji: String {
         emoji.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-
+    
     private var trimmedGoalUnit: String {
         goalUnit.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-
+    
     private var goalCount: Int {
         goalType == .todo ? 1 : Int(goalCountText) ?? 0
     }
-
+    
     private var canSave: Bool {
         !trimmedName.isEmpty &&
         !trimmedEmoji.isEmpty &&
@@ -49,7 +49,7 @@ struct CreateHabitScreen: View {
         !trimmedGoalUnit.isEmpty &&
         (frequency != .custom || !selectedDays.isEmpty)
     }
-
+    
     var body: some View {
         BaseScreen($screenTitle) {
             AppScrollView {
@@ -88,11 +88,11 @@ struct CreateHabitScreen: View {
             Text("Identity")
                 .font(.headline)
                 .fontDesign(.rounded)
-
+            
             TextField("Habit name", text: $name)
                 .textInputAutocapitalization(.words)
                 .padding()
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+                .liquidGlassSurface(cornerRadius: 12, interactive: true)
             
             HStack(spacing: 12) {
                 ZStack {
@@ -106,7 +106,7 @@ struct CreateHabitScreen: View {
                     }
                     .aspectRatio(1, contentMode: .fill)
                     .padding()
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+                    .liquidGlassSurface(cornerRadius: 12, interactive: true)
                     
                     TextField("", text: $emoji)
                         .frame(width: 0, height: 0)
@@ -119,20 +119,20 @@ struct CreateHabitScreen: View {
                             }
                         }
                 }
-
+                
                 TextField("Description", text: $habitDescription)
                     .padding()
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+                    .liquidGlassSurface(cornerRadius: 12, interactive: true)
             }
         }
     }
-
+    
     private var scheduleSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Repeat")
                 .font(.headline)
                 .fontDesign(.rounded)
-
+            
             Picker("Repeat", selection: $frequency) {
                 Text("Daily").tag(HabitFrequency.daily)
                 Text("Weekday").tag(HabitFrequency.weekday)
@@ -143,7 +143,7 @@ struct CreateHabitScreen: View {
             .onChange(of: frequency) { _, newValue in
                 applyDefaultDays(for: newValue)
             }
-
+            
             if frequency == .custom {
                 HStack(spacing: 8) {
                     ForEach(habitStore.orderedWeekdays, id: \.self) { weekday in
@@ -157,8 +157,8 @@ struct CreateHabitScreen: View {
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 38)
                                 .foregroundStyle(selectedDays.contains(weekday) ? .white : .primary)
-                                .background(selectedDays.contains(weekday) ? Color.rosePink : Color.white.opacity(0.55))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .background(selectedDays.contains(weekday) ? Color.rosePink.opacity(0.68) : Color.primary.opacity(0.06))
+                                .liquidGlassSurface(cornerRadius: 8, interactive: true)
                         }
                         .buttonStyle(.plain)
                     }
@@ -191,17 +191,17 @@ struct CreateHabitScreen: View {
                         .keyboardType(.numberPad)
                         .disabled(goalType == .todo)
                         .padding()
-                        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
-
+                        .liquidGlassSurface(cornerRadius: 12, interactive: true)
+                    
                     TextField("Unit", text: $goalUnit)
                         .padding()
-                        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+                        .liquidGlassSurface(cornerRadius: 12, interactive: true)
                 }
                 .transition(.opacity)
             }
         }
     }
-
+    
     private var styleSection: some View {
         HStack(spacing: 10) {
             ForEach(colorOptions, id: \.self) { hex in
@@ -292,24 +292,24 @@ struct CreateHabitScreen: View {
                 .font(.subheadline)
                 .fontDesign(.rounded)
             HabitItemView(habit: emptyHabit, selectedDate: Date())
-
+            
             if goalType == .count && goalCount > 1 {
                 Text("In Progress")
                     .font(.subheadline)
                     .fontDesign(.rounded)
                 HabitItemView(habit: halfHabit, selectedDate: Date())
             }
-
+            
             Text("Done")
                 .font(.subheadline)
                 .fontDesign(.rounded)
             HabitItemView(habit: doneHabit, selectedDate: Date())
         }
     }
-
+    
     private func saveHabit() {
         guard canSave else { return }
-
+        
         let habit = Habit(
             name: trimmedName,
             emoji: trimmedEmoji,
@@ -321,11 +321,11 @@ struct CreateHabitScreen: View {
             goalCount: goalCount,
             goalUnit: trimmedGoalUnit
         )
-
+        
         habitStore.addHabit(habit)
         dismiss()
     }
-
+    
     private func applyDefaultDays(for frequency: HabitFrequency) {
         switch frequency {
         case .daily:
@@ -338,7 +338,7 @@ struct CreateHabitScreen: View {
             selectedDays = []
         }
     }
-
+    
     private func toggleWeekday(_ weekday: Int) {
         if selectedDays.contains(weekday) {
             selectedDays.remove(weekday)
@@ -346,7 +346,7 @@ struct CreateHabitScreen: View {
             selectedDays.insert(weekday)
         }
     }
-
+    
     private func shortWeekdayName(for weekday: Int) -> String {
         switch weekday {
         case 0: "Sun"
@@ -367,7 +367,7 @@ struct CreateHabitScreen: View {
         for: Habit.self, HabitEntry.self, HabitReminder.self, UserProfile.self,
         configurations: config
     )
-
+    
     NavigationStack {
         CreateHabitScreen()
             .modelContainer(container)

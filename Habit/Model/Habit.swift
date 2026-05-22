@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import SwiftUI
 
 // MARK: - Habit (Core Entity)
 
@@ -93,6 +94,15 @@ extension Habit {
 }
 
 extension Habit {
+    var gradient: LinearGradient {
+        let colors = GradientProvider.gradient(for: colorHex)
+        
+        return LinearGradient(
+            colors: colors,
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
     
     static var mock: Habit {
         let habit = Habit(
@@ -232,5 +242,61 @@ extension Habit {
             english,
             meditation
         ]
+    }
+}
+
+enum GradientProvider {
+    
+    static func gradient(for hex: String) -> [Color] {
+        switch hex {
+            
+        case "#4ECDC4":
+            return [
+                Color(hex: "#8EF2EA"),
+                Color(hex: "#7FE7E0")
+            ]
+            
+        case "#FF6B6B":
+            return [
+                Color(hex: "#FFBABA"),
+                Color(hex: "#FFA5A5")
+            ]
+            
+        case "#FFD93D":
+            return [
+                Color(hex: "#FFF09A"),
+                Color(hex: "#FFE985")
+            ]
+            
+        case "#6C5CE7":
+            return [
+                Color(hex: "#C3B8FF"),
+                Color(hex: "#A29BFE")
+            ]
+            
+        case "#A8E6CF":
+            return [
+                Color(hex: "#D9FFF0"),
+                Color(hex: "#C9F7E8")
+            ]
+            
+        case "#87CEEB":
+            return [
+                Color(hex: "#CFF0FF"),
+                Color(hex: "#B7E8FF")
+            ]
+            
+        case "#FF66B2":
+            return [
+                Color(hex: "#FFC2DD"),
+                Color(hex: "#FF9DCC")
+            ]
+            
+        default:
+            return [
+                Color.gray.opacity(0.4),
+                Color.white
+            ]
+        }
     }
 }

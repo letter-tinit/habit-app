@@ -5,7 +5,12 @@
 //  Created by TiniT on 20/5/26.
 //
 
+import UIKit
+
 enum AppConstant {
+    static let screenWidth = UIScreen.current.bounds.width
+    static let screenHeight = UIScreen.current.bounds.height
+    
     static let colorOptions = [
         "#4ECDC4",
         "#FF6B6B",

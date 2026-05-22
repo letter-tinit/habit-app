@@ -12,15 +12,19 @@ struct WeekView: View {
     enum DateState {
         case selected
         case unselected
+        case unselectedComplete
         case unselectedToday
         
-        init(isSelected: Bool, isToday: Bool) {
-            switch (isSelected, isToday) {
-            case (true, false), (true, true):
+        init(isSelected: Bool, isToday: Bool, isComplete: Bool) {
+            switch (isSelected, isToday, isComplete) {
+                
+            case (true, _, true), (true, _, false):
                 self = .selected
-            case (false, true):
+            case (false, true, true), (false, true, false):
                 self = .unselectedToday
-            case (false, false):
+            case (false, false, true):
+                self = .unselectedComplete
+            case (false, false, false):
                 self = .unselected
             }
         }
@@ -28,14 +32,17 @@ struct WeekView: View {
         var color: Color {
             switch self {
             case .selected:
-                    .rosePink
+                return .rosePink
             case .unselected:
-                    .warmGray
+                return .primary.opacity(0.58)
+            case .unselectedComplete:
+                return .green.opacity(0.7)
             case .unselectedToday:
-                    .black
+                return .primary
             }
         }
     }
+
     
     @Environment(HabitStore.self) private var habitStore
     @State private var centerDate = Date()
@@ -97,12 +104,14 @@ struct WeekView: View {
             ForEach(Array(dates.enumerated()), id: \.element) { index, date in
                 let isSelected = habitStore.isSelectedDay(date)
                 let isToday = date.isToday()
-                let dateState = DateState(isSelected: isSelected, isToday: isToday)
+                let isComplete = habitStore.isComplete(on: date)
+                let dateState = DateState(isSelected: isSelected, isToday: isToday, isComplete: isComplete)
                 let tintColor: Color = dateState.color
                 let fontWeight: Font.Weight = isSelected ? .bold : .regular
                 
                 Button {
                     baseAnimation {
+                        Haptic.selection()
                         habitStore.didChangeSelecteDate(date)
                     }
                 } label: {
@@ -120,13 +129,13 @@ struct WeekView: View {
                         )
                     }
                     .padding(.horizontal, 6)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 14)
                     .foregroundStyle(tintColor)
                     .overlay {
                         Capsule()
                             .stroke(
-                                tintColor,
-                                lineWidth: dateState == .unselected ? 1 : 2
+                                tintColor.opacity(dateState == .unselected ? 0.45 : 0.9),
+                                lineWidth: dateState == .unselected ? 0.8 : 1.4
                             )
                     }
                     .shadow(
@@ -156,12 +165,13 @@ struct WeekView: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
-        .frame(height: 100)
+        .frame(height: 118)
         .onAppear {
             centerDate = habitStore.selectedDate
         }
         .onChange(of: weekPage) { _, newValue in
             guard newValue != 0 else { return }
+            Haptic.selection()
             moveWeek(by: newValue, weekStartsOnMonday: weekStartsOnMonday)
         }
         .onChange(of: habitStore.selectedDate) { _, newValue in
@@ -172,6 +182,8 @@ struct WeekView: View {
             weekPage = 0
         }
         .frame(maxWidth: .infinity)
+        .padding(.horizontal, 10)
+        .liquidGlassSurface(cornerRadius: 28)
     }
 }
 
