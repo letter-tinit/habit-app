@@ -68,6 +68,10 @@ final class HabitStore {
         shouldSchedule(habit, on: selectedDate, calendar: AppCalendar.current)
     }
     
+    func isScheduled(_ habit: Habit, on date: Date) -> Bool {
+        shouldSchedule(habit, on: date, calendar: AppCalendar.current)
+    }
+
     /// Input: a date param
     /// Output: check is input date is selected Date or not
     func isSelectedDay(_ date: Date) -> Bool {
@@ -370,6 +374,10 @@ final class HabitStore {
         return dates
     }
     
+    func weekDates(containing date: Date) -> [Date] {
+        dates(in: .weekOfYear, containing: date)
+    }
+
     func completionRatio(on date: Date) -> Double {
         let calendar = AppCalendar.current
         let targetDate = calendar.startOfDay(for: date)
@@ -476,6 +484,16 @@ final class HabitStore {
         return completionRatio(for: habit, dates: dates)
     }
     
+    func completionRatioForWeek(containing date: Date) -> Double {
+        let dates = weekDates(containing: date)
+        return completionRatio(for: dates)
+    }
+
+    func completionRatioForWeek(for habit: Habit, containing date: Date) -> Double {
+        let dates = weekDates(containing: date)
+        return completionRatio(for: habit, dates: dates)
+    }
+
     func completionRatioForYear(containing date: Date) -> Double {
         let calendar = AppCalendar.current
         
@@ -530,6 +548,8 @@ final class HabitStore {
         let dates: [Date]
         
         switch scope {
+        case .week:
+            dates = weekDates(containing: date)
         case .month:
             dates = monthDates(containing: date)
         case .year:
@@ -540,16 +560,23 @@ final class HabitStore {
     }
     
     func yearDates(containing date: Date) -> [Date] {
+        dates(in: .year, containing: date)
+    }
+
+    private func dates(
+        in component: Calendar.Component,
+        containing date: Date
+    ) -> [Date] {
         let calendar = AppCalendar.current
         
-        guard let yearInterval = calendar.dateInterval(of: .year, for: date) else {
+        guard let interval = calendar.dateInterval(of: component, for: date) else {
             return []
         }
         
         var dates: [Date] = []
-        var currentDate = calendar.startOfDay(for: yearInterval.start)
+        var currentDate = calendar.startOfDay(for: interval.start)
         
-        while currentDate < yearInterval.end {
+        while currentDate < interval.end {
             dates.append(currentDate)
             
             guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {

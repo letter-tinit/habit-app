@@ -26,9 +26,6 @@ struct StatisticalScreen: View {
                     StatisticsTableHeader(scope: $statisticsScope, date: $statisticsDate)
                         .padding(.horizontal)
                         .padding(.top, 14)
-                        .onChange(of: statisticsScope) { _, _ in
-                            Haptic.selection()
-                        }
 
                     AppScrollView {
                         LazyVStack(spacing: 14) {

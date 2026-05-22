@@ -8,6 +8,7 @@
 import SwiftUI
 
 enum StatisticsScope: String, CaseIterable {
+    case week = "Week"
     case month = "Month"
     case year = "Year"
 }
@@ -18,6 +19,8 @@ struct StatisticsTableHeader: View {
     
     private var periodTitle: String {
         switch scope {
+        case .week:
+            weekRangeTitle
         case .month:
             date.toString(withFormat: .custom("MMMM yyyy"))
         case .year:
@@ -25,6 +28,30 @@ struct StatisticsTableHeader: View {
         }
     }
     
+    private var weekRangeTitle: String {
+        let dates = weekDates
+
+        guard let start = dates.first, let end = dates.last else {
+            return date.toString(withFormat: .custom("MMM d"))
+        }
+
+        if AppCalendar.current.isDate(start, equalTo: end, toGranularity: .month) {
+            return "\(start.toString(withFormat: .custom("MMM d")))-\(end.toString(withFormat: .custom("d")))"
+        }
+
+        return "\(start.toString(withFormat: .custom("MMM d")))~\(end.toString(withFormat: .custom("MMM d")))"
+    }
+
+    private var weekDates: [Date] {
+        guard let interval = AppCalendar.current.dateInterval(of: .weekOfYear, for: date) else {
+            return []
+        }
+
+        return (0..<7).compactMap {
+            AppCalendar.current.date(byAdding: .day, value: $0, to: interval.start)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Picker("Statistics", selection: $scope) {
@@ -62,12 +89,25 @@ struct StatisticsTableHeader: View {
                 .buttonStyle(.plain)
             }
         }
+        .onChange(of: scope, { _, _ in
+            Haptic.selection()
+            resetPeriod()
+        })
         .padding()
         .liquidGlassSurface(cornerRadius: 18)
     }
     
     private func changePeriod(by value: Int) {
-        let component: Calendar.Component = scope == .month ? .month : .year
+        let component: Calendar.Component
+
+        switch scope {
+        case .week:
+            component = .weekOfYear
+        case .month:
+            component = .month
+        case .year:
+            component = .year
+        }
         
         guard let newDate = AppCalendar.current.date(byAdding: component, value: value, to: date) else {
             return
@@ -77,6 +117,10 @@ struct StatisticsTableHeader: View {
             Haptic.selection()
             date = newDate
         }
+    }
+    
+    private func resetPeriod() {
+        date = Date()
     }
 }
 
@@ -116,6 +160,8 @@ struct StatisticsOverviewView: View {
             StatisticSummaryTable(summary: summary, habit: habit)
             
             switch scope {
+            case .week:
+                WeeklyStatisticsView(habit: habit, date: date)
             case .month:
                 MonthlyStatisticsView(habit: habit, date: date)
             case .year:
@@ -202,6 +248,98 @@ struct StatisticSummaryTable: View {
                 .fontWeight(.semibold)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct WeeklyStatisticsView: View {
+    @Environment(HabitStore.self) private var habitStore
+    let habit: Habit
+    let date: Date
+
+    private var weekDates: [Date] {
+        habitStore.weekDates(containing: date)
+    }
+
+    private var weekTitle: String {
+        guard let start = weekDates.first, let end = weekDates.last else {
+            return "Selected week"
+        }
+
+        return "\(start.toString(withFormat: .custom("MMM d")))-\(end.toString(withFormat: .custom("MMM d")))"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center, spacing: 12) {
+                let weekProgress = habitStore.completionRatioForWeek(for: habit, containing: date)
+
+                CircularWithTitleProgressView(
+                    progress: weekProgress,
+                    title: "\(Int(weekProgress * 100))%",
+                    size: 52,
+                    tintColor: Color(hex: habit.colorHex),
+                    fontWeight: .bold
+                )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(weekTitle)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
+
+                    Text("Weekly progress")
+                        .font(.caption)
+                        .fontDesign(.rounded)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(weekDates, id: \.self) { day in
+                    weekDayColumn(for: day)
+                }
+            }
+            .frame(minHeight: 118)
+        }
+    }
+
+    private func weekDayColumn(for day: Date) -> some View {
+        let progress = habitStore.completionRatio(for: habit, on: day)
+        let isScheduled = habitStore.isScheduled(habit, on: day)
+        let displayHeight = max(progress * 68, progress > 0 ? 14 : 0)
+
+        return VStack(spacing: 7) {
+            Text(day.toString(withFormat: .dayNameSymbol))
+                .font(.caption2)
+                .fontWeight(.semibold)
+                .fontDesign(.rounded)
+                .foregroundStyle(.secondary)
+
+            ZStack(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(Color.primary.opacity(isScheduled ? 0.06 : 0.025))
+                    .frame(height: 68)
+
+                if progress > 0 {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(habit.gradient)
+                        .frame(height: displayHeight)
+                }
+            }
+            .overlay(alignment: .center) {
+                if progress == 0 {
+                    Circle()
+                        .fill(isScheduled ? Color.primary.opacity(0.16) : Color.clear)
+                        .frame(width: 6, height: 6)
+                }
+            }
+
+            Text(day.toString(withFormat: .dayNo))
+                .font(.caption2)
+                .fontWeight(day.isToday() ? .bold : .regular)
+                .fontDesign(.rounded)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
