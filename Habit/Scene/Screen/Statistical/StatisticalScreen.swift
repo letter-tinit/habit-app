@@ -37,7 +37,6 @@ struct StatisticalScreen: View {
                                 )
                             }
                         }
-                        .padding()
                     }
                 }
             }

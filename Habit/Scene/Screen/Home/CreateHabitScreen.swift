@@ -11,11 +11,10 @@ import SwiftData
 struct CreateHabitScreen: View {
     @Environment(HabitStore.self) private var habitStore
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var isFocused: Bool
     
     @State private var screenTitle = "New Habit"
     @State private var name = "Habit Name"
-    @State private var emoji = "⭐"
+    @State private var icon = "star.fill"
     @State private var habitDescription = ""
     @State private var colorHex = AppConstant.defaultColor
     @State private var frequency: HabitFrequency = .daily
@@ -23,15 +22,12 @@ struct CreateHabitScreen: View {
     @State private var goalType: GoalType = .todo
     @State private var goalCountText = "1"
     @State private var goalUnit = "times"
+    @State private var showSymbolPicker = false
     
     private let colorOptions = AppConstant.colorOptions
     
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    
-    private var trimmedEmoji: String {
-        emoji.trimmingCharacters(in: .whitespacesAndNewlines)
     }
     
     private var trimmedGoalUnit: String {
@@ -44,7 +40,6 @@ struct CreateHabitScreen: View {
     
     private var canSave: Bool {
         !trimmedName.isEmpty &&
-        !trimmedEmoji.isEmpty &&
         goalCount > 0 &&
         !trimmedGoalUnit.isEmpty &&
         (frequency != .custom || !selectedDays.isEmpty)
@@ -81,6 +76,11 @@ struct CreateHabitScreen: View {
             }
         }
         .animation(.snappy, value: goalType)
+        .sheet(isPresented: $showSymbolPicker) {
+            SymbolPickerSheet(selectedSymbol: $icon)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
     }
     
     private var identitySection: some View {
@@ -95,30 +95,16 @@ struct CreateHabitScreen: View {
                 .liquidGlassSurface(cornerRadius: 12, interactive: true)
             
             HStack(spacing: 12) {
-                ZStack {
-                    Button {
-                        baseAnimation {
-                            isFocused = true
-                        }
-                    } label: {
-                        Text(emoji)
-                            .font(.headline)
+                Button {
+                    baseAnimation {
+                        showSymbolPicker = true
                     }
-                    .aspectRatio(1, contentMode: .fill)
-                    .padding()
-                    .liquidGlassSurface(cornerRadius: 12, interactive: true)
-                    
-                    TextField("", text: $emoji)
-                        .frame(width: 0, height: 0)
-                        .focused($isFocused)
-                        .opacity(0)
-                        .keyboardType(.emoji)
-                        .onChange(of: emoji) { _, newValue in
-                            if let last = newValue.last, last.isEmoji {
-                                emoji = String(last)
-                            }
-                        }
+                } label: {
+                    Image(systemName: icon)
                 }
+                .aspectRatio(1, contentMode: .fill)
+                .padding()
+                .liquidGlassSurface(cornerRadius: 12, interactive: true)
                 
                 TextField("Description", text: $habitDescription)
                     .padding()
@@ -208,30 +194,38 @@ struct CreateHabitScreen: View {
     }
     
     private var styleSection: some View {
-        HStack(spacing: 10) {
-            ForEach(colorOptions, id: \.self) { hex in
-                Button {
-                    colorHex = hex
-                } label: {
-                    Circle()
-                        .fill(Color(hex: hex))
-                        .frame(width: 34, height: 34)
-                        .overlay {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Style")
+                .font(.headline)
+                .fontDesign(.rounded)
+            
+            ScrollView(.horizontal) {
+                HStack(spacing: 10) {
+                    ForEach(colorOptions, id: \.self) { hex in
+                        Button {
+                            colorHex = hex
+                        } label: {
                             Circle()
-                                .stroke(colorHex == hex ? Color.primary : Color.clear, lineWidth: 2)
+                                .fill(Color(hex: hex))
+                                .frame(width: 34, height: 34)
+                                .overlay {
+                                    Circle()
+                                        .stroke(colorHex == hex ? Color.primary : Color.clear, lineWidth: 2)
+                                }
                         }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
             }
+            .scrollIndicators(.hidden)
         }
-        
     }
     
     private var previewItem: some View {
         let emptyHabit = Habit(
             name: trimmedName,
-            emoji: trimmedEmoji,
             description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+            icon: icon,
             colorHex: colorHex,
             frequency: frequency,
             targetDaysOfWeek: Array(selectedDays).sorted(),
@@ -250,8 +244,8 @@ struct CreateHabitScreen: View {
         
         let halfHabit = Habit(
             name: trimmedName,
-            emoji: trimmedEmoji,
             description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+            icon: icon,
             colorHex: colorHex,
             frequency: frequency,
             targetDaysOfWeek: Array(selectedDays).sorted(),
@@ -270,8 +264,8 @@ struct CreateHabitScreen: View {
         
         let doneHabit = Habit(
             name: trimmedName,
-            emoji: trimmedEmoji,
             description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+            icon: icon,
             colorHex: colorHex,
             frequency: frequency,
             targetDaysOfWeek: Array(selectedDays).sorted(),
@@ -317,8 +311,8 @@ struct CreateHabitScreen: View {
         
         let habit = Habit(
             name: trimmedName,
-            emoji: trimmedEmoji,
             description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+            icon: icon,
             colorHex: colorHex,
             frequency: frequency,
             targetDaysOfWeek: Array(selectedDays).sorted(),
@@ -363,6 +357,47 @@ struct CreateHabitScreen: View {
         case 6: "Sat"
         default: ""
         }
+    }
+}
+
+private struct SymbolPickerSheet: View {
+    @Binding var selectedSymbol: String
+    @Environment(\.dismiss) private var dismiss
+    
+    private let columns = [
+        GridItem(.adaptive(minimum: 56), spacing: 12)
+    ]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Choose Symbol")
+                .font(.headline)
+                .fontDesign(.rounded)
+            
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: 12) {
+                    ForEach(AppConstant.habitSymbolOptions, id: \.self) { symbol in
+                        Button {
+                            selectedSymbol = symbol
+                            dismiss()
+                        } label: {
+                            Image(systemName: symbol)
+                                .font(.title3)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 52)
+                                .foregroundStyle(selectedSymbol == symbol ? .white : .primary)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(selectedSymbol == symbol ? Color.rosePink : Color.primary.opacity(0.06))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(symbol)
+                    }
+                }
+            }
+        }
+        .padding(20)
     }
 }
 

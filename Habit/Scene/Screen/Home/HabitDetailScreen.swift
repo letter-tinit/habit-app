@@ -31,7 +31,6 @@ struct HabitDetailContent: View {
     @State private var shouldDeleteOnDisappear = false
     
     var body: some View {
-        let originalEmoji = habit.emoji
         BaseScreen($habit.name) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 18) {
@@ -41,8 +40,7 @@ struct HabitDetailContent: View {
                                 isFocused = true
                             }
                         } label: {
-                            Text(habit.emoji)
-                                .font(.system(size: 34))
+                            Image(systemName: habit.icon)
                                 .frame(width: 72, height: 72)
                                 .liquidGlassSurface(cornerRadius: 24, interactive: true)
                         }
@@ -77,19 +75,6 @@ struct HabitDetailContent: View {
                     }
                     .padding(.horizontal)
                     .liquidGlassSurface(cornerRadius: 20)
-                    
-                    TextField("", text: $habit.emoji)
-                        .frame(height: 0)
-                        .opacity(0)
-                        .focused($isFocused)
-                        .keyboardType(.emoji)
-                        .onChange(of: habit.emoji) { _, newValue in
-                            if let last = newValue.last, last.isEmoji {
-                                habit.emoji = String(last)
-                            } else {
-                                habit.emoji = originalEmoji
-                            }
-                        }
                 }
                 .padding()
             }
@@ -143,8 +128,4 @@ struct HabitDetailContent: View {
         }
         .frame(minHeight: 48)
     }
-}
-
-#Preview {
-    HabitDetailScreen(habitID: Habit.mock.id)
 }

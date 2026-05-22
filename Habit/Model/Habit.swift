@@ -5,10 +5,9 @@ import SwiftUI
 // MARK: - Habit (Core Entity)
 
 @Model
-final class Habit {
+final class Habit: Hashable {
     var id: UUID
     var name: String
-    var emoji: String
     var habitDescription: String
     var icon: String           // SF Symbol name, e.g. "drop.fill"
     var colorHex: String       // e.g. "#FF6B6B"
@@ -40,7 +39,6 @@ final class Habit {
     // MARK: - Init
     init(
         name: String,
-        emoji: String,
         description: String = "",
         icon: String = "star.fill",
         colorHex: String = "#4ECDC4",
@@ -52,7 +50,6 @@ final class Habit {
     ) {
         self.id = UUID()
         self.name = name
-        self.emoji = emoji
         self.habitDescription = description
         self.icon = icon
         self.colorHex = colorHex
@@ -103,146 +100,6 @@ extension Habit {
             endPoint: .bottomTrailing
         )
     }
-    
-    static var mock: Habit {
-        let habit = Habit(
-            name: "Drink Water",
-            emoji: "💧",
-            description: "Drink enough water daily to stay hydrated",
-            icon: "drop.fill",
-            colorHex: "#4ECDC4",
-            frequency: .daily,
-            targetDaysOfWeek: [],
-            goalType: .count,
-            goalCount: 8,
-            goalUnit: "glasses"
-        )
-        
-        let todayEntry = HabitEntry(
-            date: Date(),
-            completedCount: 5,
-            note: "Good hydration progress today"
-        )
-        todayEntry.habit = habit
-        
-        habit.entries = [todayEntry]
-        habit.currentStreak = 3
-        habit.longestStreak = 7
-        habit.lastCompletedDate = Date()
-        
-        return habit
-    }
-    
-    static var mocks: [Habit] {
-        let calendar = AppCalendar.current
-        let today = Date()
-        
-        func makeEntries(
-            for habit: Habit,
-            dailyCounts: [Int]
-        ) -> [HabitEntry] {
-            dailyCounts.enumerated().map { index, count in
-                let date = calendar.date(byAdding: .day, value: -index, to: today)!
-                let entry = HabitEntry(
-                    date: date,
-                    completedCount: count,
-                    note: count > 0 ? "Progress recorded" : ""
-                )
-                entry.habit = habit
-                return entry
-            }
-        }
-        
-        let water = Habit(
-            name: "Drink Water",
-            emoji: "💧",
-            description: "Drink enough water daily",
-            icon: "drop.fill",
-            colorHex: "#4ECDC4",
-            frequency: .daily,
-            goalType: .count,
-            goalCount: 8,
-            goalUnit: "glasses"
-        )
-        water.entries = makeEntries(for: water, dailyCounts: [8, 7, 8, 6, 8, 6, 8])
-        water.currentStreak = 3
-        water.longestStreak = 10
-        water.lastCompletedDate = today
-        
-        let reading = Habit(
-            name: "Read Books",
-            emoji: "📚",
-            description: "Read self-development or technical books",
-            icon: "book.fill",
-            colorHex: "#FF6B6B",
-            frequency: .daily,
-            goalType: .count,
-            goalCount: 90,
-            goalUnit: "pages"
-        )
-        reading.entries = makeEntries(for: reading, dailyCounts: [30, 9, 90, 30, 20, 30, 20])
-        reading.currentStreak = 2
-        reading.longestStreak = 12
-        reading.lastCompletedDate = today
-        
-        let exercise = Habit(
-            name: "Exercise",
-            emoji: "🏃‍♀️",
-            description: "Workout or light exercise",
-            icon: "figure.walk",
-            colorHex: "#FFD93D",
-            frequency: .weekday,
-            targetDaysOfWeek: [1,2,3,4,5],
-            goalType: .count,
-            goalCount: 30,
-            goalUnit: "minutes"
-        )
-        exercise.entries = makeEntries(for: exercise, dailyCounts: [20, 30, 30, 30, 0, 30, 0])
-        exercise.currentStreak = 2
-        exercise.longestStreak = 8
-        exercise.lastCompletedDate = today
-        
-        let english = Habit(
-            name: "Practice English",
-            emoji: "🇬🇧",
-            description: "Practice reading or speaking English",
-            icon: "globe",
-            colorHex: "#6C5CE7",
-            frequency: .daily,
-            goalType: .count,
-            goalCount: 30,
-            goalUnit: "minutes"
-        )
-        english.entries = makeEntries(for: english, dailyCounts: [30, 35, 30, 25, 30, 25, 30])
-        english.currentStreak = 3
-        english.longestStreak = 15
-        english.lastCompletedDate = today
-        
-        let meditation = Habit(
-            name: "Meditation",
-            emoji: "🧘",
-            description: "Mindfulness and focus practice",
-            icon: "brain.head.profile",
-            colorHex: "#A8E6CF",
-            frequency: .weekend,
-            targetDaysOfWeek: [0,6],
-            goalType: .count,
-            goalCount: 15,
-            goalUnit: "minutes"
-        )
-        meditation.entries = makeEntries(for: meditation, dailyCounts: [15, 10, 15])
-        meditation.currentStreak = 1
-        meditation.longestStreak = 5
-        meditation.lastCompletedDate = today
-        
-        return [
-            water,
-            reading,
-            exercise,
-            english,
-            meditation
-        ]
-    }
 }
 
 enum GradientProvider {
@@ -290,6 +147,48 @@ enum GradientProvider {
             return [
                 Color(hex: "#FFC2DD"),
                 Color(hex: "#FF9DCC")
+            ]
+            
+        case "#FD8A5E":
+            return [
+                Color(hex: "#FFD0BC"),
+                Color(hex: "#FFAE8B")
+            ]
+            
+        case "#50C878":
+            return [
+                Color(hex: "#BDF4CB"),
+                Color(hex: "#8BE5A8")
+            ]
+            
+        case "#4169E1":
+            return [
+                Color(hex: "#B9CAFF"),
+                Color(hex: "#8EAAFF")
+            ]
+            
+        case "#E0115F":
+            return [
+                Color(hex: "#FFB0CE"),
+                Color(hex: "#F77EAE")
+            ]
+            
+        case "#8E7DBE":
+            return [
+                Color(hex: "#DCD1FA"),
+                Color(hex: "#C2B0ED")
+            ]
+            
+        case "#FF9F1C":
+            return [
+                Color(hex: "#FFD89B"),
+                Color(hex: "#FFC065")
+            ]
+            
+        case "#7AC74F":
+            return [
+                Color(hex: "#D2F5B6"),
+                Color(hex: "#AFE487")
             ]
             
         default:

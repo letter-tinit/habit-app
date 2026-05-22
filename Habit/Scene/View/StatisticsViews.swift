@@ -137,7 +137,7 @@ struct StatisticsOverviewView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
-                Text(habit.emoji)
+                Image(systemName: habit.icon)
                     .font(.title3)
                     .frame(width: 42, height: 42)
                     .background(Color(hex: habit.colorHex).opacity(0.30))
@@ -169,7 +169,6 @@ struct StatisticsOverviewView: View {
             }
         }
         .padding()
-        .liquidGlassSurface(cornerRadius: 18, interactive: false)
     }
 }
 

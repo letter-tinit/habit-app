@@ -114,6 +114,7 @@ struct AppList<Content: View>: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
         }
+        .scrollIndicators(.hidden)
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Color.clear)

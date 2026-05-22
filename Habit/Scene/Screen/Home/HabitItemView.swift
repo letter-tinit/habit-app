@@ -15,7 +15,7 @@ struct HabitItemView: View {
     
     // MARK: - Input Param
     private let name: String
-    private let emoji: String
+    private let icon: String
     private let colorHex: String
     private let gradient: LinearGradient
     private let goalType: GoalType
@@ -42,7 +42,7 @@ struct HabitItemView: View {
         let entry = habit.entry(for: selectedDate)
         
         self.name = habit.name
-        self.emoji = habit.emoji
+        self.icon = habit.icon
         self.colorHex = habit.colorHex
         self.gradient = habit.gradient
         self.goalType = habit.goalType
@@ -73,10 +73,7 @@ struct HabitItemView: View {
             
             // MARK: - HABIT INFOR
             HStack {
-                Text(emoji)
-                    .padding(5)
-                    .background(Color.primary.opacity(0.10))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                Image(systemName: icon)
                 
                 VStack(alignment: .leading) {
                     Text(name)
@@ -162,10 +159,6 @@ struct HabitItemView: View {
             handleAction(.tapped)
         }
     }
-}
-
-#Preview {
-    HabitItemView(habit: .mock, selectedDate: Date())
 }
 
 // MARK: - NumberPadSheet
