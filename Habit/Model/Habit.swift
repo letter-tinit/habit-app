@@ -83,7 +83,7 @@ enum GoalType: String, Codable {
 extension Habit {
     func entry(for date: Date) -> HabitEntry? {
         let targetDate = AppCalendar.current.startOfDay(for: date)
-        
+
         return entries.first {
             $0.date.isEqual(with: targetDate)
         }
@@ -93,7 +93,7 @@ extension Habit {
 extension Habit {
     var gradient: LinearGradient {
         let colors = GradientProvider.gradient(for: colorHex)
-        
+
         return LinearGradient(
             colors: colors,
             startPoint: .topLeading,
@@ -103,94 +103,94 @@ extension Habit {
 }
 
 enum GradientProvider {
-    
+
     static func gradient(for hex: String) -> [Color] {
         switch hex {
-            
+
         case "#4ECDC4":
             return [
                 Color(hex: "#8EF2EA"),
                 Color(hex: "#7FE7E0")
             ]
-            
+
         case "#FF6B6B":
             return [
                 Color(hex: "#FFBABA"),
                 Color(hex: "#FFA5A5")
             ]
-            
+
         case "#FFD93D":
             return [
                 Color(hex: "#FFF09A"),
                 Color(hex: "#FFE985")
             ]
-            
+
         case "#6C5CE7":
             return [
                 Color(hex: "#C3B8FF"),
                 Color(hex: "#A29BFE")
             ]
-            
+
         case "#A8E6CF":
             return [
                 Color(hex: "#D9FFF0"),
                 Color(hex: "#C9F7E8")
             ]
-            
+
         case "#87CEEB":
             return [
                 Color(hex: "#CFF0FF"),
                 Color(hex: "#B7E8FF")
             ]
-            
+
         case "#FF66B2":
             return [
                 Color(hex: "#FFC2DD"),
                 Color(hex: "#FF9DCC")
             ]
-            
+
         case "#FD8A5E":
             return [
                 Color(hex: "#FFD0BC"),
                 Color(hex: "#FFAE8B")
             ]
-            
+
         case "#50C878":
             return [
                 Color(hex: "#BDF4CB"),
                 Color(hex: "#8BE5A8")
             ]
-            
+
         case "#4169E1":
             return [
                 Color(hex: "#B9CAFF"),
                 Color(hex: "#8EAAFF")
             ]
-            
+
         case "#E0115F":
             return [
                 Color(hex: "#FFB0CE"),
                 Color(hex: "#F77EAE")
             ]
-            
+
         case "#8E7DBE":
             return [
                 Color(hex: "#DCD1FA"),
                 Color(hex: "#C2B0ED")
             ]
-            
+
         case "#FF9F1C":
             return [
                 Color(hex: "#FFD89B"),
                 Color(hex: "#FFC065")
             ]
-            
+
         case "#7AC74F":
             return [
                 Color(hex: "#D2F5B6"),
                 Color(hex: "#AFE487")
             ]
-            
+
         default:
             return [
                 Color.gray.opacity(0.4),

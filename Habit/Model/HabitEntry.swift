@@ -42,7 +42,7 @@ final class HabitEntry {
 extension HabitEntry {
     func entry(for date: Date, in entries: [HabitEntry]) -> HabitEntry? {
         let targetDate = AppCalendar.current.startOfDay(for: date)
-        
+
         return entries.first {
             $0.date.isEqual(with: targetDate)
         }

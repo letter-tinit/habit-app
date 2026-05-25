@@ -10,7 +10,7 @@ import SwiftUI
 struct HabitDetailScreen: View {
     @Environment(HabitStore.self) private var habitStore
     let habitID: UUID
-    
+
     var body: some View {
         Group {
             if let habit = habitStore.habit(id: habitID) {
@@ -29,7 +29,8 @@ struct HabitDetailContent: View {
     @Bindable var habit: Habit
     @FocusState private var isFocused: Bool
     @State private var shouldDeleteOnDisappear = false
-    
+    @State private var showEditHabit = false
+
     var body: some View {
         BaseScreen($habit.name) {
             AppScrollView {
@@ -45,25 +46,25 @@ struct HabitDetailContent: View {
                                 .liquidGlassSurface(cornerRadius: 24, interactive: true)
                         }
                         .buttonStyle(.plain)
-                        
+
                         VStack(alignment: .leading, spacing: 6) {
                             Text(habit.name)
                                 .font(.title3)
                                 .fontWeight(.semibold)
                                 .fontDesign(.rounded)
-                            
+
                             Text(habit.habitDescription.isEmpty ? "No description" : habit.habitDescription)
                                 .font(.subheadline)
                                 .fontDesign(.rounded)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(3)
                         }
-                        
+
                         Spacer(minLength: 0)
                     }
                     .padding()
                     .liquidGlassSurface(cornerRadius: 24)
-                    
+
                     VStack(spacing: 0) {
                         detailRow(title: "Repeat", value: repeatTitle)
                         Divider().opacity(0.28)
@@ -83,6 +84,14 @@ struct HabitDetailContent: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    showEditHabit = true
+                } label: {
+                    Image(systemName: "pencil")
+                }
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
                     baseAnimation {
                         shouldDeleteOnDisappear = true
                         dismiss()
@@ -92,13 +101,18 @@ struct HabitDetailContent: View {
                 }
             }
         }
+        .sheet(isPresented: $showEditHabit) {
+            NavigationStack {
+                CreateHabitScreen(habit: habit)
+            }
+        }
         .onDisappear {
             if shouldDeleteOnDisappear {
                 habitStore.deleteHabit(id: habitID)
             }
         }
     }
-    
+
     private var repeatTitle: String {
         switch habit.frequency {
         case .daily: "Daily"
@@ -107,20 +121,20 @@ struct HabitDetailContent: View {
         case .custom: "Custom"
         }
     }
-    
+
     private var goalTitle: String {
         habit.goalType == .todo ? "Complete once" : "\(habit.goalCount) \(habit.goalUnit)"
     }
-    
+
     private func detailRow(title: String, value: String) -> some View {
         HStack {
             Text(title)
                 .font(.subheadline)
                 .fontDesign(.rounded)
                 .foregroundStyle(.secondary)
-            
+
             Spacer()
-            
+
             Text(value)
                 .font(.subheadline)
                 .fontWeight(.semibold)

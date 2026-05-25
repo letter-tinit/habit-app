@@ -16,7 +16,7 @@ enum StatisticsScope: String, CaseIterable {
 struct StatisticsTableHeader: View {
     @Binding var scope: StatisticsScope
     @Binding var date: Date
-    
+
     private var periodTitle: String {
         switch scope {
         case .week:
@@ -27,31 +27,31 @@ struct StatisticsTableHeader: View {
             date.toString(withFormat: .custom("yyyy"))
         }
     }
-    
+
     private var weekRangeTitle: String {
         let dates = weekDates
-        
+
         guard let start = dates.first, let end = dates.last else {
             return date.toString(withFormat: .custom("MMM d"))
         }
-        
+
         if AppCalendar.current.isDate(start, equalTo: end, toGranularity: .month) {
             return "\(start.toString(withFormat: .custom("MMM d")))-\(end.toString(withFormat: .custom("d")))"
         }
-        
+
         return "\(start.toString(withFormat: .custom("MMM d")))~\(end.toString(withFormat: .custom("MMM d")))"
     }
-    
+
     private var weekDates: [Date] {
         guard let interval = AppCalendar.current.dateInterval(of: .weekOfYear, for: date) else {
             return []
         }
-        
+
         return (0..<7).compactMap {
             AppCalendar.current.date(byAdding: .day, value: $0, to: interval.start)
         }
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Picker("Statistics", selection: $scope) {
@@ -60,7 +60,7 @@ struct StatisticsTableHeader: View {
                 }
             }
             .pickerStyle(.segmented)
-            
+
             HStack(spacing: 12) {
                 Button {
                     changePeriod(by: -1)
@@ -71,13 +71,13 @@ struct StatisticsTableHeader: View {
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
-                
+
                 Text(periodTitle)
                     .font(.headline)
                     .fontWeight(.semibold)
                     .fontDesign(.rounded)
                     .frame(maxWidth: .infinity)
-                
+
                 Button {
                     changePeriod(by: 1)
                 } label: {
@@ -96,10 +96,10 @@ struct StatisticsTableHeader: View {
         .padding()
         .liquidGlassSurface(cornerRadius: 18)
     }
-    
+
     private func changePeriod(by value: Int) {
         let component: Calendar.Component
-        
+
         switch scope {
         case .week:
             component = .weekOfYear
@@ -108,17 +108,17 @@ struct StatisticsTableHeader: View {
         case .year:
             component = .year
         }
-        
+
         guard let newDate = AppCalendar.current.date(byAdding: component, value: value, to: date) else {
             return
         }
-        
+
         baseAnimation {
             Haptic.selection()
             date = newDate
         }
     }
-    
+
     private func resetPeriod() {
         date = Date()
     }
@@ -129,11 +129,11 @@ struct StatisticsOverviewView: View {
     let habit: Habit
     let scope: StatisticsScope
     let date: Date
-    
+
     private var summary: HabitStatisticSummary {
         habitStore.statisticSummary(for: habit, scope: scope, containing: date)
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
@@ -142,23 +142,23 @@ struct StatisticsOverviewView: View {
                     .frame(width: 42, height: 42)
                     .background(Color(hex: habit.colorHex).opacity(0.30))
                     .clipShape(.circle)
-                
+
                 VStack(alignment: .leading, spacing: 3) {
                     Text(habit.name)
                         .font(.headline)
                         .fontDesign(.rounded)
-                    
+
                     Text("\(habit.currentStreak) current streak")
                         .font(.caption)
                         .fontDesign(.rounded)
                         .foregroundStyle(.secondary)
                 }
-                
+
                 Spacer()
             }
-            
+
             StatisticSummaryTable(summary: summary, habit: habit)
-            
+
             switch scope {
             case .week:
                 WeeklyStatisticsView(habit: habit, date: date)
@@ -175,15 +175,15 @@ struct StatisticsOverviewView: View {
 struct StatisticSummaryTable: View {
     let summary: HabitStatisticSummary
     let habit: Habit
-    
+
     private var progressText: String {
         "\(Int(summary.progress * 100))%"
     }
-    
+
     private var completedDaysText: String {
         "\(summary.completedDays)/\(summary.scheduledDays)"
     }
-    
+
     private var totalProgressText: String {
         if habit.goalType == .count {
             "\(summary.totalCompletedCount)/\(summary.totalTargetCount) \(habit.goalUnit)"
@@ -191,26 +191,26 @@ struct StatisticSummaryTable: View {
             "\(summary.totalCompletedCount)/\(summary.totalTargetCount)"
         }
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             statisticRow(title: "Progress", value: progressText)
-            
+
             Divider().opacity(0.35)
-            
+
             statisticRow(title: "Completed days", value: completedDaysText)
-            
+
             Divider().opacity(0.35)
-            
+
             statisticRow(title: "Total", value: totalProgressText)
-            
+
             Divider().opacity(0.35)
-            
+
             HStack {
                 statisticColumn(title: "Current streak", value: "\(habit.currentStreak)")
-                
+
                 Divider().opacity(0.35)
-                
+
                 statisticColumn(title: "Best streak", value: "\(habit.longestStreak)")
             }
             .frame(minHeight: 46)
@@ -218,15 +218,15 @@ struct StatisticSummaryTable: View {
         .fontDesign(.rounded)
         .padding(.vertical, 2)
     }
-    
+
     private func statisticRow(title: String, value: String) -> some View {
         HStack {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            
+
             Spacer(minLength: 12)
-            
+
             Text(value)
                 .font(.caption)
                 .fontWeight(.semibold)
@@ -235,13 +235,13 @@ struct StatisticSummaryTable: View {
         }
         .frame(minHeight: 32)
     }
-    
+
     private func statisticColumn(title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-            
+
             Text(value)
                 .font(.caption)
                 .fontWeight(.semibold)
@@ -254,24 +254,24 @@ struct WeeklyStatisticsView: View {
     @Environment(HabitStore.self) private var habitStore
     let habit: Habit
     let date: Date
-    
+
     private var weekDates: [Date] {
         habitStore.weekDates(containing: date)
     }
-    
+
     private var weekTitle: String {
         guard let start = weekDates.first, let end = weekDates.last else {
             return "Selected week"
         }
-        
+
         return "\(start.toString(withFormat: .custom("MMM d")))-\(end.toString(withFormat: .custom("MMM d")))"
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
                 let weekProgress = habitStore.completionRatioForWeek(for: habit, containing: date)
-                
+
                 CircularWithTitleProgressView(
                     progress: weekProgress,
                     title: "\(Int(weekProgress * 100))%",
@@ -279,20 +279,20 @@ struct WeeklyStatisticsView: View {
                     tintColor: Color(hex: habit.colorHex),
                     fontWeight: .bold
                 )
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(weekTitle)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
-                    
+
                     Text("Weekly progress")
                         .font(.caption)
                         .fontDesign(.rounded)
                         .foregroundStyle(.secondary)
                 }
             }
-            
+
             HStack(alignment: .bottom, spacing: 8) {
                 ForEach(weekDates, id: \.self) { day in
                     weekDayColumn(for: day)
@@ -301,19 +301,19 @@ struct WeeklyStatisticsView: View {
             .frame(minHeight: 118)
         }
     }
-    
+
     private func weekDayColumn(for day: Date) -> some View {
         let isScheduled = habitStore.isScheduled(habit, on: day)
         let progress = habitStore.completionRatio(for: habit, on: day)
         let displayHeight = 68.0
-        
+
         return VStack(spacing: 7) {
             Text(day.toString(withFormat: .dayNameSymbol))
                 .font(.caption2)
                 .fontWeight(.semibold)
                 .fontDesign(.rounded)
                 .foregroundStyle(.secondary)
-            
+
             Group {
                 if isScheduled {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
@@ -336,7 +336,7 @@ struct WeeklyStatisticsView: View {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .stroke(Color.primary.opacity(0.1), lineWidth: 2)
             }
-            
+
             Text(day.toString(withFormat: .dayNo))
                 .font(.caption2)
                 .fontWeight(day.isToday() ? .bold : .regular)
@@ -350,30 +350,30 @@ struct MonthlyStatisticsView: View {
     @Environment(HabitStore.self) private var habitStore
     let habit: Habit
     let date: Date
-    
+
     private let itemSpacing: CGFloat = AppConstant.screenWidth / 40
-    
+
     private var monthTitle: String {
         date.toString(withFormat: .custom("MMMM yyyy"))
     }
-    
+
     private var paddedDates: [Date?] {
         guard let firstDate = habitStore.monthDates(containing: date).first else {
             return []
         }
-        
+
         let weekday = AppCalendar.current.component(.weekday, from: firstDate) - 1
         let leadingEmptyDays = habitStore.orderedWeekdays.firstIndex(of: weekday) ?? 0
-        
+
         return Array(repeating: nil, count: leadingEmptyDays) + habitStore.monthDates(containing: date).map(Optional.some)
     }
-    
+
     var body: some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: itemSpacing), count: 7)
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
                 let monthProgress = habitStore.completionRatioForMonth(for: habit, containing: date)
-                
+
                 CircularWithTitleProgressView(
                     progress: monthProgress,
                     title: "\(Int(monthProgress * 100))%",
@@ -381,20 +381,20 @@ struct MonthlyStatisticsView: View {
                     tintColor: Color(hex: habit.colorHex),
                     fontWeight: .bold
                 )
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(monthTitle)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
-                    
+
                     Text("Monthly progress")
                         .font(.caption)
                         .fontDesign(.rounded)
                         .foregroundStyle(.secondary)
                 }
             }
-            
+
             LazyVGrid(columns: columns, spacing: itemSpacing) {
                 ForEach(habitStore.orderedWeekdays, id: \.self) { weekday in
                     Text(shortWeekdayName(for: weekday))
@@ -404,7 +404,7 @@ struct MonthlyStatisticsView: View {
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                 }
-                
+
                 ForEach(Array(paddedDates.enumerated()), id: \.offset) { _, date in
                     if let date {
                         let progress = habitStore.completionRatio(for: habit, on: date)
@@ -427,7 +427,7 @@ struct MonthlyStatisticsView: View {
                             }
                             .clipShape(RoundedRectangle(cornerRadius: itemSpacing))
                             .aspectRatio(1, contentMode: .fit)
-                            
+
                             Text(date.toString(withFormat: .dayNo))
                                 .font(.caption2)
                                 .fontWeight(.semibold)
@@ -448,7 +448,7 @@ struct MonthlyStatisticsView: View {
             .padding(.bottom, 10)
         }
     }
-    
+
     private func tintColor(for progress: Double) -> Color {
         switch progress {
         case 0:
@@ -461,7 +461,7 @@ struct MonthlyStatisticsView: View {
                 .emeraldGreen
         }
     }
-    
+
     private func shortWeekdayName(for weekday: Int) -> String {
         switch weekday {
         case 0: "Sun"
@@ -480,13 +480,13 @@ struct YearlyStatisticsView: View {
     @Environment(HabitStore.self) private var habitStore
     let habit: Habit
     let date: Date
-    
+
     private let cellSize: CGFloat = 10
-    
+
     private var yearTitle: String {
         date.toString(withFormat: .custom("yyyy"))
     }
-    
+
     private var weeks: [[Date]] {
         let calendar = AppCalendar.current
         guard
@@ -497,31 +497,31 @@ struct YearlyStatisticsView: View {
         else {
             return []
         }
-        
+
         var weeks: [[Date]] = []
         var currentDate = calendar.startOfDay(for: startWeek.start)
-        
+
         while currentDate < endWeek.end {
             let week = (0..<7).compactMap {
                 calendar.date(byAdding: .day, value: $0, to: currentDate)
             }
             weeks.append(week)
-            
+
             guard let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: currentDate) else {
                 break
             }
-            
+
             currentDate = nextWeek
         }
-        
+
         return weeks
     }
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 12) {
                 let yearProgress = habitStore.completionRatioForYear(for: habit, containing: date)
-                
+
                 CircularWithTitleProgressView(
                     progress: yearProgress,
                     title: "\(Int(yearProgress * 100))%",
@@ -529,20 +529,20 @@ struct YearlyStatisticsView: View {
                     tintColor: Color(hex: habit.colorHex),
                     fontWeight: .bold
                 )
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(yearTitle)
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .fontDesign(.rounded)
-                    
+
                     Text("Yearly progress")
                         .font(.caption)
                         .fontDesign(.rounded)
                         .foregroundStyle(.secondary)
                 }
             }
-            
+
             AppScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 8) {
                     VStack(alignment: .trailing, spacing: 4) {
@@ -553,7 +553,7 @@ struct YearlyStatisticsView: View {
                                 .frame(width: 18, height: cellSize)
                         }
                     }
-                    
+
                     HStack(alignment: .top, spacing: 4) {
                         ForEach(Array(weeks.enumerated()), id: \.offset) { _, week in
                             VStack(spacing: 4) {
@@ -568,13 +568,13 @@ struct YearlyStatisticsView: View {
             }
         }
     }
-    
+
     private func contributionCell(for date: Date) -> some View {
         let calendar = AppCalendar.current
         let isCurrentYear = calendar.isDate(date, equalTo: self.date, toGranularity: .year)
         let progress = habitStore.completionRatio(for: habit, on: date)
         let isScheduled = habitStore.isScheduled(habit, on: date)
-        
+
         return Group {
             if isScheduled {
                 RoundedRectangle(cornerRadius: 2)
@@ -598,7 +598,7 @@ struct YearlyStatisticsView: View {
                 .stroke(Color.primary.opacity(isCurrentYear ? 0.10 : 0), lineWidth: 0.5)
         }
     }
-    
+
     private func shortWeekdayName(for weekday: Int) -> String {
         switch weekday {
         case 0: "S"

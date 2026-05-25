@@ -12,7 +12,7 @@ struct HabitItemView: View {
         case tapped
         case progressChanged(Int)
     }
-    
+
     // MARK: - Input Param
     private let name: String
     private let icon: String
@@ -26,21 +26,20 @@ struct HabitItemView: View {
     private let currentStreak: Int
     private let longestStreak: Int
     private let lastCompleteStreak: Date?
-    
+
     // MARK: - UI State
     private let cornerRadius: CGFloat = 12.0
     @State private var showNumberPad = false
-    
+
     // MARK: - Callback
     var handleAction: ((Action) -> Void) = { _ in }
-    
+
     init(
         habit: Habit,
         selectedDate: Date,
         handleAction: @escaping (Action) -> Void = { _ in }
     ) {
         let entry = habit.entry(for: selectedDate)
-        
         self.name = habit.name
         self.icon = habit.icon
         self.colorHex = habit.colorHex
@@ -55,8 +54,9 @@ struct HabitItemView: View {
         self.longestStreak = habit.longestStreak
         self.lastCompleteStreak = habit.lastCompletedDate
     }
-    
+
     var body: some View {
+//        isCompleted = completionRatio > 1.0
         ZStack {
             // MARK: - PROGRESS LAYER
             gradient
@@ -70,33 +70,39 @@ struct HabitItemView: View {
                     )
                 )
                 .scaleEffect(x: completionRatio, y: 1, anchor: .leading)
-            
+
             // MARK: - HABIT INFOR
             HStack {
                 Image(systemName: icon)
-                
+
                 VStack(alignment: .leading) {
                     Text(name)
                         .font(.headline)
                         .fontDesign(.rounded)
                     
-                    if goalType == .count {
-                        Text("\(completedCount)/\(goalCount) \(goalUnit)")
-                            .font(.caption2)
-                            .fontDesign(.rounded)
-                            .fontWeight(.regular)
-                            .padding(.horizontal, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(Color.primary.opacity(0.06))
-                                    .overlay {
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .stroke(Color.primary.opacity(0.20), lineWidth: 0.4)
-                                    }
-                            )
+                    Group {
+                        if goalType == .count {
+                            Text("\(completedCount)/\(goalCount) \(goalUnit)")
+                                .padding(.horizontal, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .fill(Color.primary.opacity(0.06))
+                                        .overlay {
+                                            RoundedRectangle(cornerRadius: 3)
+                                                .stroke(Color.primary.opacity(0.20), lineWidth: 0.4)
+                                        }
+                                )
+                        } else {
+                            let isCompleted = completionRatio >= 1
+                            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(isCompleted ? Color.green : Color.secondary)
+                        }
                     }
+                    .font(.caption2)
+                    .fontDesign(.rounded)
+                    .fontWeight(.regular)
                 }
-                
+
                 Spacer()
             }
             .padding()
@@ -105,8 +111,8 @@ struct HabitItemView: View {
         .overlay(alignment: .trailing) {
             Button {
                 baseAnimation {
+                    Haptic.impact(.heavy)
                     if goalType == .todo {
-                        Haptic.impact(.heavy)
                         handleAction(.progressChanged(1))
                     } else {
                         showNumberPad = true
@@ -136,7 +142,7 @@ struct HabitItemView: View {
         .sheet(isPresented: $showNumberPad) {
             ZStack {
                 Color.primary.opacity(0.02).ignoresSafeArea()
-                
+
                 NumberPadSheet(
                     habitName: name,
                     unit: goalUnit,
@@ -168,19 +174,19 @@ struct NumberPadSheet: View {
     let current: Int
     let goal: Int
     let onConfirm: (Int) -> Void
-    
+
     @Environment(\.dismiss) private var dismiss
     @State private var input: String = ""
-    
+
     private let keys: [[String]] = [
         ["1", "2", "3"],
         ["4", "5", "6"],
         ["7", "8", "9"],
         ["C", "0", "⌫"]
     ]
-    
+
     private var parsedValue: Int { Int(input) ?? 0 }
-    
+
     var body: some View {
         VStack(alignment: .center, spacing: 16) {
             // Display
@@ -188,12 +194,7 @@ struct NumberPadSheet: View {
                 .font(.system(size: 48, weight: .semibold, design: .rounded))
                 .contentTransition(.numericText())
                 .animation(.snappy, value: input)
-                .overlay(alignment: .bottomTrailing) {
-                    Text(unit)
-                        .font(.caption)
-                        .fontDesign(.rounded)
-                }
-            
+
             // Number Pad Grid
             VStack(spacing: 10) {
                 ForEach(keys, id: \.self) { row in
@@ -206,7 +207,7 @@ struct NumberPadSheet: View {
                     }
                 }
             }
-            
+
             // Confirm Button
             Button {
                 let value = parsedValue
@@ -228,8 +229,20 @@ struct NumberPadSheet: View {
             .padding(.bottom, 8)
         }
         .padding(.horizontal, 20)
+        .overlay(alignment: .topTrailing) {
+            Text(unit)
+                .font(.caption)
+                .fontDesign(.rounded)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1)
+                .background(
+                    RoundedRectangle(cornerRadius: 3)
+                        .stroke(lineWidth: 0.5)
+                )
+                .padding(.trailing, 30)
+        }
     }
-    
+
     private func handleKey(_ key: String) {
         switch key {
         case "C":
@@ -249,7 +262,7 @@ struct NumberPadSheet: View {
 struct NumberPadKey: View {
     let label: String
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
             Text(label)

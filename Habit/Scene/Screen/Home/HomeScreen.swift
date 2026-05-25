@@ -86,7 +86,6 @@ struct HomeScreen: View {
     }
     
     private func resetHabit(_ habit: Habit) {
-        Haptic.warning()
         habitStore.resetHabitEntry(habit)
     }
     

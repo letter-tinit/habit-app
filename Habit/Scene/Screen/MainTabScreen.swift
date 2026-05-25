@@ -72,7 +72,7 @@ struct MainTabScreen: View {
                 Image(systemName: AppTab.profile.symbolImage)
             }
         }
-        .tint(activeTab.tintColor)
+        .tint(.rosePink)
         .toolbarBackground(.hidden, for: .tabBar)
         .onChange(of: activeTab) { _, _ in
             Haptic.selection()

@@ -96,7 +96,7 @@ private struct LiquidGlassSurfaceModifier: ViewModifier {
     }
 
     private var surfaceShadow: Color {
-        colorScheme == .dark ? Color.black.opacity(0.34) : Color.black.opacity(0.12)
+        colorScheme == .dark ? Color.black.opacity(0.24) : Color.black.opacity(0.02)
     }
 }
 
