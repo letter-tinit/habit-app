@@ -23,7 +23,7 @@ enum AppTab: String {
             "person"
         }
     }
-    
+
     var tintColor: Color {
         switch self {
         case .home:
@@ -37,9 +37,11 @@ enum AppTab: String {
 }
 
 struct MainTabScreen: View {
+    @Environment(HabitStore.self) private var habitStore
     @State private var activeTab: AppTab = .home
     @State private var homeRouter = HomeRouter()
-    
+    @State private var profileRouter = ProfileRouter()
+
     var body: some View {
         TabView(selection: $activeTab) {
             Tab(value: AppTab.home) {
@@ -59,7 +61,7 @@ struct MainTabScreen: View {
             } label: {
                 Image(systemName: AppTab.home.symbolImage)
             }
-            
+
             Tab(value: AppTab.statistic) {
                 StatisticalScreen()
             } label: {
@@ -67,16 +69,33 @@ struct MainTabScreen: View {
             }
 
             Tab(value: AppTab.profile) {
-                ProfileScreen()
+                AppNavigationStack(path: $profileRouter.path) {
+                    ProfileScreen()
+                        .environment(profileRouter)
+                } destination: { route in
+                    switch route {
+                    case .editProfile:
+                        EditProfileScreen()
+                            .environment(profileRouter)
+                    }
+                }
             } label: {
                 Image(systemName: AppTab.profile.symbolImage)
             }
         }
-        .tint(.rosePink)
+        .tint(.cyan)
         .toolbarBackground(.hidden, for: .tabBar)
         .onChange(of: activeTab) { _, _ in
             Haptic.selection()
         }
+    }
+
+    private var habitStoreProfileName: String {
+        habitStore.userProfile?.displayName ?? "You"
+    }
+
+    private var habitStoreProfileAvatarData: Data? {
+        habitStore.userProfile?.avatarData
     }
 }
 

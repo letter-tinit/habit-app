@@ -20,26 +20,34 @@ struct HomeScreen: View {
                     .padding(.horizontal)
                     .padding(.top, 10)
                 
-                AppList {
-                    ForEach(habitStore.filteredHabit, id: \.id) { habit in
-                        HabitItemView(habit: habit, selectedDate: habitStore.selectedDate) { action in
-                            handleHabitItemAction(action, for: habit)
-                        }
-                        .padding(.horizontal)
-                        .swipeActions {
-                            Button {
-                                resetHabit(habit)
-                            } label: {
-                                Image(systemName: "arrow.counterclockwise")
-                                    .tint(.skyBlue)
+                if habitStore.filteredHabit.isEmpty {
+                    ContentUnavailableView(
+                        "No Habits",
+                        systemImage: "figure.run.square.stack",
+                        description: Text("Create a habit to kick-off your life style")
+                    )
+                } else {
+                    AppList {
+                        ForEach(habitStore.filteredHabit, id: \.id) { habit in
+                            HabitItemView(habit: habit, selectedDate: habitStore.selectedDate) { action in
+                                handleHabitItemAction(action, for: habit)
+                            }
+                            .padding(.horizontal)
+                            .swipeActions {
+                                Button {
+                                    resetHabit(habit)
+                                } label: {
+                                    Image(systemName: "arrow.counterclockwise")
+                                        .tint(.skyBlue)
+                                }
                             }
                         }
                     }
+                    // MARK: - List Configure
+                    .listRowSpacing(20)
+                    .contentMargins(.vertical, 20)
+                    .scrollIndicators(.hidden)
                 }
-                // MARK: - List Configure
-                .listRowSpacing(20)
-                .contentMargins(.vertical, 20)
-                .scrollIndicators(.hidden)
             }
         }
         // MARK: - BaseScreen Configure

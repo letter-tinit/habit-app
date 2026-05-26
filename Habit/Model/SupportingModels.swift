@@ -30,7 +30,8 @@ final class HabitReminder {
 final class UserProfile {
     var id: UUID
     var displayName: String
-    var avatarData: Data?      // Stored as PNG/JPEG data
+    var avatarOriginalData: Data?   // Source image used for future edits
+    var avatarData: Data?           // Cropped/rendered image used for display
 
     // App preferences
     var weekStartsOnMonday: Bool

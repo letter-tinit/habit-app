@@ -109,6 +109,17 @@ final class HabitStore {
         _ = save()
     }
 
+    func updateProfile(displayName: String, avatarOriginalData: Data?, avatarData: Data?) {
+        if userProfile == nil {
+            fetchUserProfile()
+        }
+
+        userProfile?.displayName = displayName
+        userProfile?.avatarOriginalData = avatarOriginalData
+        userProfile?.avatarData = avatarData
+        _ = save()
+    }
+
     func fetchHabits() {
         let descriptor = FetchDescriptor<Habit>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
@@ -221,7 +232,7 @@ final class HabitStore {
     func resetHabitEntry(_ habit: Habit) {
         let calendar = AppCalendar.current
         let targetDate = calendar.startOfDay(for: selectedDate)
-        
+
         if let existingEntry = habit.entries.first(where: {
             $0.date.isEqual(with: targetDate)
         }) {
@@ -232,7 +243,7 @@ final class HabitStore {
             existingEntry.completedCount = 0
             existingEntry.updatedAt = Date()
         }
-        
+
         updateStreaks(for: habit)
         _ = save()
     }

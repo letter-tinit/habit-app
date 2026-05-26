@@ -7,15 +7,18 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct ProfileScreen: View {
+    @Environment(ProfileRouter.self) private var router
     @Environment(HabitStore.self) private var habitStore
     @State private var title = "Profile"
 
     var body: some View {
         BaseScreen($title, backgroundType: .cyan) {
-            ScrollView {
+            AppScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    profileSection
                     settingsSection
                     frequencyPreviewSection
                 }
@@ -27,6 +30,67 @@ struct ProfileScreen: View {
         .onAppear {
             habitStore.fetchUserProfile()
         }
+    }
+
+    private var profileSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Profile")
+                .font(.headline)
+                .fontDesign(.rounded)
+
+            Button {
+                router.push(.editProfile)
+            } label: {
+                HStack(spacing: 14) {
+                    avatarView
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(habitStore.userProfile?.displayName ?? "You")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .fontDesign(.rounded)
+
+                        Text("Edit profile")
+                            .font(.subheadline)
+                            .fontDesign(.rounded)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .buttonStyle(.plain)
+            .padding()
+            .liquidGlassSurface(cornerRadius: 16, interactive: true)
+        }
+    }
+
+    private var avatarView: some View {
+        Group {
+            if let avatarData = habitStore.userProfile?.avatarData,
+               let uiImage = UIImage(data: avatarData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "person.crop.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundStyle(.secondary)
+                    .padding(10)
+            }
+        }
+        .frame(width: 76, height: 76)
+        .clipShape(Circle())
+        .overlay {
+            Circle()
+                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+        }
+        .liquidGlassSurface(cornerRadius: 38, interactive: true)
     }
 
     private var settingsSection: some View {
@@ -105,6 +169,7 @@ struct ProfileScreen: View {
     ProfileScreen()
         .modelContainer(previewContainer)
         .environment(HabitStore(modelContext: previewContainer.mainContext))
+        .environment(ProfileRouter())
 }
 
 private let previewContainer: ModelContainer = {

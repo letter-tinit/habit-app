@@ -48,7 +48,7 @@ struct BaseScreen<Content: View>: View {
     
     init(
         _ title: Binding<String> = .constant(""),
-        backgroundType: BackgroundGradientType = .lightPink,
+        backgroundType: BackgroundGradientType = .cyan,
         @ViewBuilder content: @escaping () -> Content
     ) {
         self._title = title

@@ -54,21 +54,6 @@ struct HabitCalendarService {
         return (try? context.fetch(descriptor)) ?? []
     }
 
-    // ── Fetch all habits that should appear on a given date ───────────────
-//    func scheduledHabits(for date: Date) -> [Habit] {
-//        let weekday = AppCalendar.current.component(.weekday, from: date) - 1 // 0-indexed
-//
-//        let predicate = #Predicate<Habit> { habit in
-//            habit.archivedAt == nil && (
-//                habit.frequency == .daily ||
-//                habit.targetDaysOfWeek.contains(weekday)
-//            )
-//        }
-//
-//        let descriptor = FetchDescriptor<Habit>(predicate: predicate)
-//        return (try? context.fetch(descriptor)) ?? []
-//    }
-
     // ── Completion map for a full month: [dayNumber: Bool] ───────────────
     func completionMap(for habit: Habit, in month: Date) -> [Int: Bool] {
         let cal = AppCalendar.current

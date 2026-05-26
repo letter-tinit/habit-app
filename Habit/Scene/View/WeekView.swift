@@ -32,7 +32,7 @@ struct WeekView: View {
         var color: Color {
             switch self {
             case .selected:
-                return .rosePink
+                return .cyan
             case .unselected:
                 return .primary.opacity(0.58)
             case .unselectedComplete:

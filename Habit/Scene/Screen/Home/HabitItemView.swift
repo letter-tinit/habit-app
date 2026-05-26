@@ -56,7 +56,6 @@ struct HabitItemView: View {
     }
 
     var body: some View {
-//        isCompleted = completionRatio > 1.0
         ZStack {
             // MARK: - PROGRESS LAYER
             gradient
@@ -70,42 +69,48 @@ struct HabitItemView: View {
                     )
                 )
                 .scaleEffect(x: completionRatio, y: 1, anchor: .leading)
-
+            
             // MARK: - HABIT INFOR
-            HStack {
+            HStack(alignment: .center) {
                 Image(systemName: icon)
-
-                VStack(alignment: .leading) {
-                    Text(name)
-                        .font(.headline)
-                        .fontDesign(.rounded)
-                    
-                    Group {
-                        if goalType == .count {
-                            Text("\(completedCount)/\(goalCount) \(goalUnit)")
-                                .padding(.horizontal, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 3)
-                                        .fill(Color.primary.opacity(0.06))
-                                        .overlay {
-                                            RoundedRectangle(cornerRadius: 3)
-                                                .stroke(Color.primary.opacity(0.20), lineWidth: 0.4)
-                                        }
-                                )
-                        } else {
-                            let isCompleted = completionRatio >= 1
-                            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(isCompleted ? Color.green : Color.secondary)
-                        }
-                    }
-                    .font(.caption2)
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .foregroundStyle(.primary.opacity(0.1))
+                    )
+                    .foregroundStyle(Color.init(hex: colorHex))
+                
+                Text(name)
+                    .font(.headline)
                     .fontDesign(.rounded)
-                    .fontWeight(.regular)
+                    .foregroundStyle(.primary)
+                
+                let isCompleted = completionRatio >= 1
+                Group {
+                    if goalType == .count {
+                        Text("\(completedCount)/\(goalCount) \(goalUnit)")
+                            .padding(.horizontal, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(Color.primary.opacity(0.06))
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 3)
+                                            .stroke(Color.primary.opacity(0.20), lineWidth: 0.4)
+                                    }
+                            )
+                    } else {
+                        Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                    }
                 }
+                .foregroundStyle(isCompleted ? Color.green : Color.secondary)
+                .font(.caption2)
+                .fontDesign(.rounded)
+                .fontWeight(.regular)
 
                 Spacer()
             }
             .padding()
+            .shadow(color: .primary.opacity(0.2), radius: 2)
         }
         // MARK: - PLUS BUTTON
         .overlay(alignment: .trailing) {
