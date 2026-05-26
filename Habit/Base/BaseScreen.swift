@@ -45,15 +45,18 @@ struct BaseScreen<Content: View>: View {
     @Binding private var title: String
     private var backgroundType: BackgroundGradientType
     private var content: () -> Content
+    private var didTapOnTitle: (() -> Void)?
     
     init(
         _ title: Binding<String> = .constant(""),
         backgroundType: BackgroundGradientType = .cyan,
-        @ViewBuilder content: @escaping () -> Content
+        @ViewBuilder content: @escaping () -> Content,
+        didTapOnTitle: (() -> Void)? = nil
     ) {
         self._title = title
         self.backgroundType = backgroundType
         self.content = content
+        self.didTapOnTitle = didTapOnTitle
     }
     
     var body: some View {
@@ -70,10 +73,15 @@ struct BaseScreen<Content: View>: View {
         .toolbar {
             if !title.isEmpty {
                 ToolbarItem(placement: .title) {
-                    Text(title)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .fontDesign(.rounded)
+                    Button {
+                        didTapOnTitle?()
+                    } label: {
+                        Text(title)
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .fontDesign(.rounded)
+                    }
+                    .allowsHitTesting(didTapOnTitle != nil)
                 }
             }
         }

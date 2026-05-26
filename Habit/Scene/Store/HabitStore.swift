@@ -22,7 +22,6 @@ final class HabitStore {
     // MARK: - Dependencies
     private var modelContext: ModelContext
 
-    // MARK: - HOME
     var homeTitle: String = AppString.Home.today
     var habits: [Habit] = []
     var filteredHabit: [Habit] {

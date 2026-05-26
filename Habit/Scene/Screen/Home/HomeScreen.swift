@@ -14,7 +14,7 @@ struct HomeScreen: View {
     
     var body: some View {
         @Bindable var habitStore = habitStore
-        BaseScreen {
+        BaseScreen($habitStore.homeTitle) {
             VStack(spacing: 0) {
                 WeekView()
                     .padding(.horizontal)
@@ -49,6 +49,9 @@ struct HomeScreen: View {
                     .scrollIndicators(.hidden)
                 }
             }
+        } didTapOnTitle: {
+            Haptic.selection()
+            habitStore.backToday()
         }
         // MARK: - BaseScreen Configure
         .toolbar {
@@ -60,18 +63,6 @@ struct HomeScreen: View {
                     Image(systemName: "plus")
                         .fontWeight(.bold)
                         .frame(width: 30, height: 30)
-                }
-            }
-            
-            ToolbarItem(placement: .title) {
-                Button {
-                    Haptic.selection()
-                    habitStore.backToday()
-                } label: {
-                    Text(habitStore.homeTitle)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .fontDesign(.rounded)
                 }
             }
         }

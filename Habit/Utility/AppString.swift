@@ -14,4 +14,9 @@ enum AppString {
     enum Logger {
         static let printTest = "THIS IS LOG TEST"
     }
+    
+    enum ScreenTitle {
+        static let statistical = "Statistical"
+        static let profile = "Profile"
+    }
 }

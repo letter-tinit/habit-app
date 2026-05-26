@@ -130,12 +130,6 @@ struct EditProfileScreen: View {
             Circle()
                 .stroke(Color.primary.opacity(0.12), lineWidth: 1)
         }
-        .overlay(alignment: .center) {
-            Image(systemName: "square.and.pencil")
-                .resizable()
-                .frame(width: 38, height: 40)
-                .foregroundStyle(.white.opacity(0.2))
-        }
         .liquidGlassSurface(cornerRadius: 66)
     }
     

@@ -14,7 +14,7 @@ struct StatisticalScreen: View {
     @State private var title: String = "Statistical"
 
     var body: some View {
-        BaseScreen(backgroundType: .mint) {
+        BaseScreen($title, backgroundType: .mint) {
             if habitStore.habits.isEmpty {
                 ContentUnavailableView(
                     "No Habits",
@@ -53,13 +53,6 @@ struct StatisticalScreen: View {
                 } label: {
                     Image(systemName: habitStore.usesCompactStatisticsView ? "rectangle.expand.vertical" : "rectangle.compress.vertical")
                 }
-            }
-            
-            ToolbarItem(placement: .title) {
-                Text("ASDSAD")
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                    .fontDesign(.rounded)
             }
         }
     }
