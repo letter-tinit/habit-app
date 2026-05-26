@@ -10,24 +10,29 @@ import SwiftData
 
 enum AppTab: String {
     case home = "Home"
+    case overview = "Overview"
     case statistic = "Statistic"
     case profile = "Profile"
-
+    
     var symbolImage: String {
         return switch self {
         case .home:
             "figure.run"
+        case .overview:
+            "chart.bar.xaxis"
         case .statistic:
             "heart.text.clipboard"
         case .profile:
             "person"
         }
     }
-
+    
     var tintColor: Color {
         switch self {
         case .home:
                 .rosePink
+        case .overview:
+                .emeraldGreen
         case .statistic:
                 .emeraldGreen
         case .profile:
@@ -40,9 +45,10 @@ struct MainTabScreen: View {
     @Environment(HabitStore.self) private var habitStore
     @State private var activeTab: AppTab = .home
     @State private var homeRouter = HomeRouter()
-    @State private var profileRouter = ProfileRouter()
+    @State private var overviewRouter = OverviewRouter()
     @State private var statisticalRouter = StatisticalRouter()
-
+    @State private var profileRouter = ProfileRouter()
+    
     var body: some View {
         TabView(selection: $activeTab) {
             Tab(value: AppTab.home) {
@@ -62,7 +68,15 @@ struct MainTabScreen: View {
             } label: {
                 Image(systemName: AppTab.home.symbolImage)
             }
-
+            
+            Tab(value: AppTab.overview) {
+                AppNavigationStack(path: $overviewRouter.path) {
+                    AggregateStatisticalScreen()
+                } destination: { _ in }
+            } label: {
+                Image(systemName: AppTab.overview.symbolImage)
+            }
+            
             Tab(value: AppTab.statistic) {
                 AppNavigationStack(path: $statisticalRouter.path) {
                     StatisticalScreen()
@@ -70,7 +84,7 @@ struct MainTabScreen: View {
             } label: {
                 Image(systemName: AppTab.statistic.symbolImage)
             }
-
+            
             Tab(value: AppTab.profile) {
                 AppNavigationStack(path: $profileRouter.path) {
                     ProfileScreen()
@@ -92,11 +106,11 @@ struct MainTabScreen: View {
             Haptic.selection()
         }
     }
-
+    
     private var habitStoreProfileName: String {
         habitStore.userProfile?.displayName ?? "You"
     }
-
+    
     private var habitStoreProfileAvatarData: Data? {
         habitStore.userProfile?.avatarData
     }
@@ -108,7 +122,7 @@ struct MainTabScreen: View {
         for: Habit.self, HabitEntry.self, HabitReminder.self, UserProfile.self,
         configurations: config
     )
-
+    
     MainTabScreen()
         .modelContainer(container)
         .environment(HabitStore(modelContext: container.mainContext))

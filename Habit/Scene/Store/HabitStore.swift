@@ -896,8 +896,37 @@ extension HabitStore {
         return statisticSummary(for: habit, dates: dates)
     }
 
+    func statisticSummary(
+        scope: StatisticsScope,
+        containing date: Date
+    ) -> HabitStatisticSummary {
+        let dates: [Date]
+
+        switch scope {
+        case .week:
+            dates = weekDates(containing: date)
+        case .month:
+            dates = monthDates(containing: date)
+        case .year:
+            dates = yearDates(containing: date)
+        }
+
+        return statisticSummary(dates: dates)
+    }
+
     func yearDates(containing date: Date) -> [Date] {
         dates(in: .year, containing: date)
+    }
+
+    func dates(scope: StatisticsScope, containing date: Date) -> [Date] {
+        switch scope {
+        case .week:
+            weekDates(containing: date)
+        case .month:
+            monthDates(containing: date)
+        case .year:
+            yearDates(containing: date)
+        }
     }
 }
 
@@ -1002,6 +1031,50 @@ private extension HabitStore {
             completedDays: completedDays,
             totalCompletedCount: completedCount,
             totalTargetCount: targetCount
+        )
+    }
+
+    func statisticSummary(dates: [Date]) -> HabitStatisticSummary {
+        let calendar = AppCalendar.current
+        var scheduledDayCount = 0
+        var completedDayCount = 0
+        var totalCompletedCount = 0
+        var totalTargetCount = 0
+
+        for date in dates {
+            let scheduledHabits = habits.filter {
+                shouldSchedule($0, on: date, calendar: calendar)
+            }
+
+            guard !scheduledHabits.isEmpty else {
+                continue
+            }
+
+            scheduledDayCount += 1
+
+            if isComplete(on: date) {
+                completedDayCount += 1
+            }
+
+            for habit in scheduledHabits where habit.goalCount > 0 {
+                let entry = habit.entries.first {
+                    calendar.isDate($0.date, inSameDayAs: date)
+                }
+                totalCompletedCount += min(entry?.completedCount ?? 0, habit.goalCount)
+                totalTargetCount += habit.goalCount
+            }
+        }
+
+        let progress = totalTargetCount == 0
+        ? 0
+        : min(Double(totalCompletedCount) / Double(totalTargetCount), 1)
+
+        return HabitStatisticSummary(
+            progress: progress,
+            scheduledDays: scheduledDayCount,
+            completedDays: completedDayCount,
+            totalCompletedCount: totalCompletedCount,
+            totalTargetCount: totalTargetCount
         )
     }
 }
