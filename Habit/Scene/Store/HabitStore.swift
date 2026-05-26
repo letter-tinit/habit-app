@@ -26,7 +26,7 @@ final class HabitStore {
     var profileTitle: String = AppString.ScreenTitle.profile
     var habits: [Habit] = []
     var filteredHabit: [Habit] {
-        return habits.filter(isHabit)
+        habits.filter(isHabit)
     }
     var selectedHabit: Habit?
     private(set) var selectedDate: Date = Date()
@@ -205,7 +205,10 @@ extension HabitStore {
 extension HabitStore {
     func fetchHabits() {
         let descriptor = FetchDescriptor<Habit>(
-            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            sortBy: [
+                SortDescriptor(\.sortOrder),
+                SortDescriptor(\.createdAt, order: .reverse)
+            ]
         )
         do {
             habits = try modelContext.fetch(descriptor)
@@ -216,8 +219,37 @@ extension HabitStore {
     }
 
     func addHabit(_ habit: Habit) {
+        habit.sortOrder = nextHabitSortOrder()
         modelContext.insert(habit)
         if save() {
+            fetchHabits()
+        }
+    }
+
+    func moveFilteredHabits(from source: IndexSet, to destination: Int) {
+        let visibleHabitIDs = filteredHabit.map(\.id)
+        let visibleHabitIDSet = Set(visibleHabitIDs)
+        let reorderedVisibleIDs = visibleHabitIDs.moving(from: source, to: destination)
+
+        var reorderedVisibleIDIndex = 0
+        let reorderedGlobalIDs = habits.map { habit in
+            guard visibleHabitIDSet.contains(habit.id) else {
+                return habit.id
+            }
+
+            defer {
+                reorderedVisibleIDIndex += 1
+            }
+            return reorderedVisibleIDs[reorderedVisibleIDIndex]
+        }
+
+        for (index, habitID) in reorderedGlobalIDs.enumerated() {
+            habit(id: habitID)?.sortOrder = index
+        }
+
+        if save() {
+            fetchHabits()
+        } else {
             fetchHabits()
         }
     }
@@ -569,6 +601,10 @@ private extension HabitStore {
         return backupURL
     }
 
+    func nextHabitSortOrder() -> Int {
+        (habits.map(\.sortOrder).max() ?? -1) + 1
+    }
+
     func replaceCurrentData(with backup: HabitBackup) throws {
         try deleteExistingBackupData()
         restoreProfile(from: backup.profile)
@@ -634,6 +670,7 @@ private extension HabitStore {
             habit.id = backup.id
             habit.createdAt = backup.createdAt
             habit.archivedAt = backup.archivedAt
+            habit.sortOrder = backup.sortOrder
             habit.reminderTime = backup.reminderTime
             habit.currentStreak = backup.currentStreak
             habit.longestStreak = backup.longestStreak
@@ -941,5 +978,22 @@ private extension HabitStore {
             totalCompletedCount: completedCount,
             totalTargetCount: targetCount
         )
+    }
+}
+
+private extension Array {
+    func moving(from source: IndexSet, to destination: Int) -> [Element] {
+        var result = self
+        let movingElements = source.map { result[$0] }
+
+        for index in source.sorted(by: >) {
+            result.remove(at: index)
+        }
+
+        let removedBeforeDestination = source.filter { $0 < destination }.count
+        let adjustedDestination = destination - removedBeforeDestination
+        result.insert(contentsOf: movingElements, at: adjustedDestination)
+
+        return result
     }
 }

@@ -42,6 +42,9 @@ struct HomeScreen: View {
                                 }
                             }
                         }
+                        .onMove { source, destination in
+                            habitStore.moveFilteredHabits(from: source, to: destination)
+                        }
                     }
                     // MARK: - List Configure
                     .listRowSpacing(20)
@@ -55,6 +58,13 @@ struct HomeScreen: View {
         }
         // MARK: - BaseScreen Configure
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                if !habitStore.filteredHabit.isEmpty {
+                    EditButton()
+                        .fontDesign(.rounded)
+                }
+            }
+
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Haptic.impact(.medium)

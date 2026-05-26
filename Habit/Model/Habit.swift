@@ -13,6 +13,7 @@ final class Habit: Hashable {
     var colorHex: String       // e.g. "#FF6B6B"
     var createdAt: Date
     var archivedAt: Date?      // nil = active
+    var sortOrder: Int = 0
 
     // Scheduling
     var frequency: HabitFrequency          // daily / weekly / custom
@@ -54,6 +55,7 @@ final class Habit: Hashable {
         self.icon = icon
         self.colorHex = colorHex
         self.createdAt = Date()
+        self.sortOrder = Int(Date().timeIntervalSince1970)
         self.frequency = frequency
         self.targetDaysOfWeek = targetDaysOfWeek
         self.goalType = goalType

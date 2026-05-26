@@ -145,6 +145,7 @@ struct HabitBackupItem: Codable {
     var colorHex: String
     var createdAt: Date
     var archivedAt: Date?
+    var sortOrder: Int
     var frequency: HabitFrequency
     var targetDaysOfWeek: [Int]
     var reminderTime: Date?
@@ -165,6 +166,7 @@ struct HabitBackupItem: Codable {
         colorHex = habit.colorHex
         createdAt = habit.createdAt
         archivedAt = habit.archivedAt
+        sortOrder = habit.sortOrder
         frequency = habit.frequency
         targetDaysOfWeek = habit.targetDaysOfWeek
         reminderTime = habit.reminderTime
@@ -176,6 +178,52 @@ struct HabitBackupItem: Codable {
         lastCompletedDate = habit.lastCompletedDate
         entries = habit.entries.map(HabitEntryBackupItem.init)
         reminders = habit.reminders.map(HabitReminderBackupItem.init)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case habitDescription
+        case icon
+        case colorHex
+        case createdAt
+        case archivedAt
+        case sortOrder
+        case frequency
+        case targetDaysOfWeek
+        case reminderTime
+        case goalType
+        case goalCount
+        case goalUnit
+        case currentStreak
+        case longestStreak
+        case lastCompletedDate
+        case entries
+        case reminders
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        habitDescription = try container.decode(String.self, forKey: .habitDescription)
+        icon = try container.decode(String.self, forKey: .icon)
+        colorHex = try container.decode(String.self, forKey: .colorHex)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        archivedAt = try container.decodeIfPresent(Date.self, forKey: .archivedAt)
+        sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
+        frequency = try container.decode(HabitFrequency.self, forKey: .frequency)
+        targetDaysOfWeek = try container.decode([Int].self, forKey: .targetDaysOfWeek)
+        reminderTime = try container.decodeIfPresent(Date.self, forKey: .reminderTime)
+        goalType = try container.decode(GoalType.self, forKey: .goalType)
+        goalCount = try container.decode(Int.self, forKey: .goalCount)
+        goalUnit = try container.decode(String.self, forKey: .goalUnit)
+        currentStreak = try container.decode(Int.self, forKey: .currentStreak)
+        longestStreak = try container.decode(Int.self, forKey: .longestStreak)
+        lastCompletedDate = try container.decodeIfPresent(Date.self, forKey: .lastCompletedDate)
+        entries = try container.decode([HabitEntryBackupItem].self, forKey: .entries)
+        reminders = try container.decode([HabitReminderBackupItem].self, forKey: .reminders)
     }
 }
 
