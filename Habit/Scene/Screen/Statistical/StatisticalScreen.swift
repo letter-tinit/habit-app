@@ -13,16 +13,8 @@ struct StatisticalScreen: View {
     @State private var statisticsDate: Date = Date()
     @State private var title: String = "Statistical"
 
-    private var usesSimplifiedMode: Binding<Bool> {
-        Binding {
-            habitStore.userProfile?.usesSimplifiedStatisticsMode ?? false
-        } set: { newValue in
-            habitStore.updateUsesSimplifiedStatisticsMode(newValue)
-        }
-    }
-
     var body: some View {
-        BaseScreen($title, backgroundType: .mint) {
+        BaseScreen(backgroundType: .mint) {
             if habitStore.habits.isEmpty {
                 ContentUnavailableView(
                     "No Habits",
@@ -56,10 +48,18 @@ struct StatisticalScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    Haptic.selection()
                     habitStore.usesCompactStatisticsView.toggle()
                 } label: {
-                    Image(systemName: usesSimplifiedMode.wrappedValue ? "rectangle.compress.vertical" : "rectangle.expand.vertical")
+                    Image(systemName: habitStore.usesCompactStatisticsView ? "rectangle.expand.vertical" : "rectangle.compress.vertical")
                 }
+            }
+            
+            ToolbarItem(placement: .title) {
+                Text("ASDSAD")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .fontDesign(.rounded)
             }
         }
     }

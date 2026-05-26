@@ -38,7 +38,7 @@ enum AppTab: String {
 
 struct MainTabScreen: View {
     @Environment(HabitStore.self) private var habitStore
-    @State private var activeTab: AppTab = .home
+    @State private var activeTab: AppTab = .statistic
     @State private var homeRouter = HomeRouter()
     @State private var profileRouter = ProfileRouter()
     @State private var statisticalRouter = StatisticalRouter()

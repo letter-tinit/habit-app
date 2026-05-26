@@ -80,33 +80,31 @@ struct HabitItemView: View {
                     )
                     .foregroundStyle(Color.init(hex: colorHex))
                 
-                Text(name)
-                    .font(.headline)
-                    .fontDesign(.rounded)
-                    .foregroundStyle(.primary)
-                
-                let isCompleted = completionRatio >= 1
-                Group {
-                    if goalType == .count {
-                        Text("\(completedCount)/\(goalCount) \(goalUnit)")
-                            .padding(.horizontal, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(Color.primary.opacity(0.06))
-                                    .overlay {
-                                        RoundedRectangle(cornerRadius: 3)
-                                            .stroke(Color.primary.opacity(0.20), lineWidth: 0.4)
-                                    }
-                            )
-                    } else {
-                        Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                    }
+                VStack(alignment: .leading) {
+                    Text(name)
+                        .font(.headline)
+                        .fontDesign(.rounded)
+                        .foregroundStyle(.primary)
+                    
+                    let isCompleted = completionRatio >= 1
+                    
+                    let result = goalType == .count ? "\(completedCount)/\(goalCount) \(goalUnit)" : "\(completedCount)/\(goalCount)"
+                    Text(result)
+                        .padding(.horizontal, 4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color.primary.opacity(0.06))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .stroke(Color.primary.opacity(0.20), lineWidth: 0.4)
+                                }
+                        )
+                        .foregroundStyle(isCompleted ? Color.green : Color.secondary)
+                        .font(.caption2)
+                        .fontDesign(.rounded)
+                        .fontWeight(.regular)
                 }
-                .foregroundStyle(isCompleted ? Color.green : Color.secondary)
-                .font(.caption2)
-                .fontDesign(.rounded)
-                .fontWeight(.regular)
-
+                
                 Spacer()
             }
             .padding()
@@ -114,29 +112,51 @@ struct HabitItemView: View {
         }
         // MARK: - PLUS BUTTON
         .overlay(alignment: .trailing) {
-            Button {
-                baseAnimation {
-                    Haptic.impact(.heavy)
-                    if goalType == .todo {
-                        handleAction(.progressChanged(1))
-                    } else {
-                        showNumberPad = true
+            let isCompleted =  completionRatio >= 1
+            Group {
+                if isCompleted {
+                    VStack {
+                        HStack(spacing: 2) {
+                            let dayUnit = currentStreak == 1 ? "day" : "days"
+                            Text("\(currentStreak) \(dayUnit)")
+                                .fontWeight(.regular)
+                                .foregroundStyle(.primary)
+                            
+                            Image(systemName: "flame.fill")
+                                .foregroundStyle(.orange)
+                        }
+                        .font(.caption2)
+                        
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.title3)
+                            .foregroundStyle(.green)
                     }
-                }
-            } label: {
-                Image(systemName: goalType == .todo ? "checkmark" : "plus")
-                    .fontWeight(.bold)
                     .fontDesign(.rounded)
+                } else {
+                    Button {
+                        baseAnimation {
+                            Haptic.impact(.heavy)
+                            if goalType == .todo {
+                                handleAction(.progressChanged(1))
+                            } else {
+                                showNumberPad = true
+                            }
+                        }
+                    } label: {
+                        Image(systemName: goalType == .todo ? "checkmark" : "plus")
+                            .fontWeight(.bold)
+                            .fontDesign(.rounded)
+                    }
+                    .padding(8)
+                    .buttonStyle(.plain)
+                    .glassEffect(
+                        .regular,
+                        in: .circle
+                    )
+                }
             }
-            .padding(8)
-            .buttonStyle(.plain)
-            .glassEffect(
-                .regular,
-                in: .circle
-            )
             .padding(.horizontal, 10)
             .shadow(color: .black.opacity(0.3), radius: 1)
-            .opacity(completionRatio == 1 ? 0 : 1)
         }
         // MARK: - ITEM STYLE
         .mask {
