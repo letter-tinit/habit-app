@@ -147,6 +147,58 @@ extension HabitStore {
     }
 }
 
+// MARK: - Backup
+
+extension HabitStore {
+    func exportBackupData() throws -> Data {
+        if userProfile == nil {
+            fetchUserProfile()
+        }
+
+        let backup = HabitBackup(profile: userProfile, habits: habits)
+        try backup.validate()
+        return try encodeBackup(backup)
+    }
+
+    func backupSummary(for data: Data) throws -> HabitBackupSummary {
+        let backup = try decodeAndValidateBackup(from: data)
+        return backup.summary
+    }
+
+    func createPreImportBackup() throws -> URL {
+        let data = try exportBackupData()
+        let directory = try backupDirectory()
+        let filename = "HabitBackup-BeforeImport-\(Self.backupFilenameDateFormatter.string(from: Date())).json"
+        let url = directory.appendingPathComponent(filename)
+        try data.write(to: url, options: .atomic)
+        return url
+    }
+
+    func decodeAndValidateBackup(from data: Data) throws -> HabitBackup {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let backup = try decoder.decode(HabitBackup.self, from: data)
+        try backup.validate()
+        return backup
+    }
+
+    func encodeBackup(_ backup: HabitBackup) throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        return try encoder.encode(backup)
+    }
+
+    func importBackupData(_ data: Data) throws {
+        _ = try createPreImportBackup()
+        let backup = try decodeAndValidateBackup(from: data)
+        try replaceCurrentData(with: backup)
+        fetchUserProfile()
+        fetchHabits()
+    }
+}
+
 // MARK: - Habits
 
 extension HabitStore {
@@ -472,6 +524,157 @@ private extension HabitStore {
         } catch {
             Logger.error("Failed to save context: \(error)")
             return false
+        }
+    }
+}
+
+// MARK: - Backup Helpers
+
+enum HabitBackupError: LocalizedError {
+    case unsupportedSchemaVersion(Int)
+    case invalidData(String)
+    case saveFailed
+
+    var errorDescription: String? {
+        switch self {
+        case .unsupportedSchemaVersion(let version):
+            "This backup uses schema version \(version), which this app cannot import."
+        case .invalidData(let message):
+            message
+        case .saveFailed:
+            "The backup could not be saved after import."
+        }
+    }
+}
+
+private extension HabitStore {
+    static let backupFilenameDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd-HHmmss"
+        return formatter
+    }()
+
+    func backupDirectory() throws -> URL {
+        let applicationSupportURL = try FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )
+        let backupURL = applicationSupportURL.appendingPathComponent("Backups", isDirectory: true)
+        try FileManager.default.createDirectory(at: backupURL, withIntermediateDirectories: true)
+        return backupURL
+    }
+
+    func replaceCurrentData(with backup: HabitBackup) throws {
+        try deleteExistingBackupData()
+        restoreProfile(from: backup.profile)
+        restoreHabits(from: backup.habits)
+
+        guard save() else {
+            throw HabitBackupError.saveFailed
+        }
+    }
+
+    func deleteExistingBackupData() throws {
+        try modelContext.fetch(FetchDescriptor<HabitEntry>()).forEach { entry in
+            modelContext.delete(entry)
+        }
+        try modelContext.fetch(FetchDescriptor<HabitReminder>()).forEach { reminder in
+            modelContext.delete(reminder)
+        }
+        try modelContext.fetch(FetchDescriptor<Habit>()).forEach { habit in
+            modelContext.delete(habit)
+        }
+        try modelContext.fetch(FetchDescriptor<UserProfile>()).forEach { profile in
+            modelContext.delete(profile)
+        }
+    }
+
+    func restoreProfile(from backup: UserProfileBackup?) {
+        let profile = UserProfile(displayName: backup?.displayName ?? "You")
+
+        if let backup {
+            profile.id = backup.id
+            profile.avatarOriginalData = backup.avatarOriginalData
+            profile.avatarData = backup.avatarData
+            profile.weekStartsOnMonday = backup.weekStartsOnMonday
+            profile.usesSimplifiedStatisticsMode = backup.usesSimplifiedStatisticsMode
+            profile.defaultReminderTime = backup.defaultReminderTime
+            profile.themeColorHex = backup.themeColorHex
+            profile.totalCompletions = backup.totalCompletions
+            profile.totalHabitsCreated = backup.totalHabitsCreated
+            profile.longestOverallStreak = backup.longestOverallStreak
+            profile.joinedAt = backup.joinedAt
+        }
+
+        modelContext.insert(profile)
+        userProfile = profile
+        AppCalendar.weekStartsOnMonday = profile.weekStartsOnMonday
+        usesCompactStatisticsView = profile.usesSimplifiedStatisticsMode
+    }
+
+    func restoreHabits(from backups: [HabitBackupItem]) {
+        for backup in backups {
+            let habit = Habit(
+                name: backup.name,
+                description: backup.habitDescription,
+                icon: backup.icon,
+                colorHex: backup.colorHex,
+                frequency: backup.frequency,
+                targetDaysOfWeek: backup.targetDaysOfWeek,
+                goalType: backup.goalType,
+                goalCount: backup.goalCount,
+                goalUnit: backup.goalUnit
+            )
+
+            habit.id = backup.id
+            habit.createdAt = backup.createdAt
+            habit.archivedAt = backup.archivedAt
+            habit.reminderTime = backup.reminderTime
+            habit.currentStreak = backup.currentStreak
+            habit.longestStreak = backup.longestStreak
+            habit.lastCompletedDate = backup.lastCompletedDate
+
+            restoreEntries(backup.entries, into: habit)
+            restoreReminders(backup.reminders, into: habit)
+            modelContext.insert(habit)
+        }
+    }
+
+    func restoreEntries(_ backups: [HabitEntryBackupItem], into habit: Habit) {
+        for backup in backups {
+            let entry = HabitEntry(
+                date: backup.date,
+                completedCount: backup.completedCount,
+                note: backup.note
+            )
+
+            entry.id = backup.id
+            entry.mood = backup.mood
+            entry.createdAt = backup.createdAt
+            entry.updatedAt = backup.updatedAt
+            entry.habit = habit
+            habit.entries.append(entry)
+            modelContext.insert(entry)
+        }
+    }
+
+    func restoreReminders(_ backups: [HabitReminderBackupItem], into habit: Habit) {
+        for backup in backups {
+            let reminder = HabitReminder(
+                time: backup.time,
+                daysOfWeek: backup.daysOfWeek,
+                isEnabled: backup.isEnabled
+            )
+
+            reminder.id = backup.id
+            reminder.notificationID = backup.notificationID
+            reminder.habit = habit
+            habit.reminders.append(reminder)
+            modelContext.insert(reminder)
         }
     }
 }

@@ -8,11 +8,19 @@
 import SwiftUI
 import SwiftData
 import UIKit
+import UniformTypeIdentifiers
 
 struct ProfileScreen: View {
     @Environment(ProfileRouter.self) private var router
     @Environment(HabitStore.self) private var habitStore
     @State private var title = "Profile"
+    @State private var backupDocument = HabitBackupDocument()
+    @State private var isExportingBackup = false
+    @State private var isImportingBackup = false
+    @State private var pendingImportData: Data?
+    @State private var pendingImportSummary: HabitBackupSummary?
+    @State private var showsImportConfirmation = false
+    @State private var backupMessage: BackupMessage?
 
     var body: some View {
         BaseScreen($title, backgroundType: .cyan) {
@@ -20,6 +28,7 @@ struct ProfileScreen: View {
                 VStack(alignment: .leading, spacing: 20) {
                     profileSection
                     settingsSection
+                    backupSection
                     frequencyPreviewSection
                 }
                 .padding(.horizontal)
@@ -29,6 +38,44 @@ struct ProfileScreen: View {
         }
         .onAppear {
             habitStore.fetchUserProfile()
+        }
+        .fileExporter(
+            isPresented: $isExportingBackup,
+            document: backupDocument,
+            contentType: .json,
+            defaultFilename: "HabitBackup-\(Date().toString(withFormat: .custom("yyyy-MM-dd")))"
+        ) { result in
+            handleExportResult(result)
+        }
+        .fileImporter(
+            isPresented: $isImportingBackup,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImportSelection(result)
+        }
+        .confirmationDialog(
+            "Import backup?",
+            isPresented: $showsImportConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Replace Current Data", role: .destructive) {
+                importPendingBackup()
+            }
+
+            Button("Cancel", role: .cancel) {
+                pendingImportData = nil
+                pendingImportSummary = nil
+            }
+        } message: {
+            Text(importConfirmationMessage)
+        }
+        .alert(item: $backupMessage) { message in
+            Alert(
+                title: Text(message.title),
+                message: Text(message.message),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
 
@@ -67,6 +114,31 @@ struct ProfileScreen: View {
             .padding()
             .liquidGlassSurface(cornerRadius: 16, interactive: true)
         }
+    }
+
+    private var importConfirmationMessage: String {
+        guard let pendingImportSummary else {
+            return "This will replace your current profile, habits, entries, and reminders with the selected backup."
+        }
+
+        return """
+        This backup was exported on \(pendingImportSummary.exportedAt.toString(withFormat: .custom("MMM d, yyyy HH:mm"))).
+
+        Profile: \(pendingImportSummary.profileName)
+        Habits: \(pendingImportSummary.habitCount)
+        Entries: \(pendingImportSummary.entryCount)
+        Reminders: \(pendingImportSummary.reminderCount)
+
+        Before replacing current data, the app will save a safety backup of your current data.
+        """
+    }
+
+    private var currentBackupSummaryMessage: String {
+        """
+        Habits: \(habitStore.habits.count)
+        Entries: \(habitStore.habits.reduce(0) { $0 + $1.entries.count })
+        Reminders: \(habitStore.habits.reduce(0) { $0 + $1.reminders.count })
+        """
     }
 
     private var avatarView: some View {
@@ -108,6 +180,70 @@ struct ProfileScreen: View {
             .padding()
             .liquidGlassSurface(cornerRadius: 16, interactive: true)
         }
+    }
+
+    private var backupSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Backup")
+                .font(.headline)
+                .fontDesign(.rounded)
+
+            VStack(spacing: 0) {
+                backupButton(
+                    title: "Export JSON Backup",
+                    subtitle: "Save profile, habits, entries, and reminders",
+                    systemImage: "square.and.arrow.up"
+                ) {
+                    exportBackup()
+                }
+
+                Divider()
+                    .padding(.leading, 52)
+
+                backupButton(
+                    title: "Import JSON Backup",
+                    subtitle: "Restore data from a saved backup file",
+                    systemImage: "square.and.arrow.down"
+                ) {
+                    isImportingBackup = true
+                }
+            }
+            .padding(.vertical, 4)
+            .liquidGlassSurface(cornerRadius: 16, interactive: true)
+        }
+    }
+
+    private func backupButton(
+        title: String,
+        subtitle: String,
+        systemImage: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: systemImage)
+                    .font(.title3.weight(.semibold))
+                    .frame(width: 38, height: 38)
+                    .background(Color.primary.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
+
+                    Text(subtitle)
+                        .font(.caption)
+                        .fontDesign(.rounded)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+            }
+            .padding()
+        }
+        .buttonStyle(.plain)
     }
 
     private var frequencyPreviewSection: some View {
@@ -163,6 +299,87 @@ struct ProfileScreen: View {
         default: ""
         }
     }
+
+    private func exportBackup() {
+        do {
+            backupDocument = HabitBackupDocument(data: try habitStore.exportBackupData())
+            isExportingBackup = true
+        } catch {
+            backupMessage = BackupMessage(
+                title: "Export Failed",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func handleExportResult(_ result: Result<URL, Error>) {
+        switch result {
+        case .success:
+            backupMessage = BackupMessage(
+                title: "Export Ready",
+                message: currentBackupSummaryMessage
+            )
+        case .failure(let error):
+            backupMessage = BackupMessage(
+                title: "Export Failed",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func handleImportSelection(_ result: Result<[URL], Error>) {
+        do {
+            guard let url = try result.get().first else {
+                return
+            }
+
+            let canAccess = url.startAccessingSecurityScopedResource()
+            defer {
+                if canAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            let data = try Data(contentsOf: url)
+            pendingImportSummary = try habitStore.backupSummary(for: data)
+            pendingImportData = data
+            showsImportConfirmation = true
+        } catch {
+            pendingImportData = nil
+            pendingImportSummary = nil
+            backupMessage = BackupMessage(
+                title: "Import Failed",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func importPendingBackup() {
+        guard let pendingImportData else {
+            return
+        }
+
+        do {
+            try habitStore.importBackupData(pendingImportData)
+            self.pendingImportData = nil
+            self.pendingImportSummary = nil
+            backupMessage = BackupMessage(
+                title: "Import Complete",
+                message: "Your backup was restored successfully. A safety backup of your previous data was saved inside the app's Backups folder."
+            )
+        } catch {
+            backupMessage = BackupMessage(
+                title: "Import Failed",
+                message: error.localizedDescription
+            )
+        }
+    }
+}
+
+private struct BackupMessage: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
 }
 
 #Preview {
