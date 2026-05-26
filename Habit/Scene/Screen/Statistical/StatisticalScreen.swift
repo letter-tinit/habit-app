@@ -13,6 +13,14 @@ struct StatisticalScreen: View {
     @State private var statisticsDate: Date = Date()
     @State private var title: String = "Statistical"
 
+    private var usesSimplifiedMode: Binding<Bool> {
+        Binding {
+            habitStore.userProfile?.usesSimplifiedStatisticsMode ?? false
+        } set: { newValue in
+            habitStore.updateUsesSimplifiedStatisticsMode(newValue)
+        }
+    }
+
     var body: some View {
         BaseScreen($title, backgroundType: .mint) {
             if habitStore.habits.isEmpty {
@@ -23,9 +31,12 @@ struct StatisticalScreen: View {
                 )
             } else {
                 VStack(spacing: 14) {
-                    StatisticsTableHeader(scope: $statisticsScope, date: $statisticsDate)
-                        .padding(.horizontal)
-                        .padding(.top, 14)
+                    StatisticsTableHeader(
+                        scope: $statisticsScope,
+                        date: $statisticsDate
+                    )
+                    .padding(.horizontal)
+                    .padding(.top, 14)
 
                     AppScrollView {
                         LazyVStack(spacing: 14) {
@@ -33,11 +44,21 @@ struct StatisticalScreen: View {
                                 StatisticsOverviewView(
                                     habit: habit,
                                     scope: statisticsScope,
-                                    date: statisticsDate
+                                    date: statisticsDate,
+                                    usesSimplifiedMode: habitStore.usesCompactStatisticsView
                                 )
                             }
                         }
                     }
+                }
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    habitStore.usesCompactStatisticsView.toggle()
+                } label: {
+                    Image(systemName: usesSimplifiedMode.wrappedValue ? "rectangle.compress.vertical" : "rectangle.expand.vertical")
                 }
             }
         }

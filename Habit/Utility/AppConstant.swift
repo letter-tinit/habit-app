@@ -28,7 +28,7 @@ enum AppConstant {
         "#7AC74F"
     ]
     
-    static let defaultColor = "#FF66B2"
+    static let defaultColor = "#4ECDC4"
     
     static let habitSymbolOptions = [
         "star.fill",

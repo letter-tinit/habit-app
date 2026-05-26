@@ -28,7 +28,6 @@ struct HabitDetailContent: View {
     let habitID: UUID
     @Bindable var habit: Habit
     @FocusState private var isFocused: Bool
-    @State private var shouldDeleteOnDisappear = false
     @State private var showEditHabit = false
 
     var body: some View {
@@ -73,6 +72,13 @@ struct HabitDetailContent: View {
                         detailRow(title: "Current streak", value: "\(habit.currentStreak)")
                         Divider().opacity(0.28)
                         detailRow(title: "Best streak", value: "\(habit.longestStreak)")
+                        if let archivedAt = habit.archivedAt {
+                            Divider().opacity(0.28)
+                            detailRow(
+                                title: "Archived on",
+                                value: archivedAt.toString(withFormat: .custom("MMM d, yyyy"))
+                            )
+                        }
                     }
                     .padding(.horizontal)
                     .liquidGlassSurface(cornerRadius: 20)
@@ -92,8 +98,23 @@ struct HabitDetailContent: View {
 
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    baseAnimation {
-                        shouldDeleteOnDisappear = true
+                    let success: Bool
+                    if habit.isArchived {
+                        success = habitStore.unarchiveHabit(habit)
+                    } else {
+                        success = habitStore.archiveHabit(habit)
+                    }
+                    if success {
+                        dismiss()
+                    }
+                } label: {
+                    Image(systemName: habit.isArchived ? "tray.and.arrow.up" : "archivebox")
+                }
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .destructive) {
+                    if habitStore.deleteHabit(id: habitID) {
                         dismiss()
                     }
                 } label: {
@@ -104,11 +125,6 @@ struct HabitDetailContent: View {
         .sheet(isPresented: $showEditHabit) {
             NavigationStack {
                 CreateHabitScreen(habit: habit)
-            }
-        }
-        .onDisappear {
-            if shouldDeleteOnDisappear {
-                habitStore.deleteHabit(id: habitID)
             }
         }
     }

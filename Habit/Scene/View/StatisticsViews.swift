@@ -129,6 +129,7 @@ struct StatisticsOverviewView: View {
     let habit: Habit
     let scope: StatisticsScope
     let date: Date
+    let usesSimplifiedMode: Bool
 
     private var summary: HabitStatisticSummary {
         habitStore.statisticSummary(for: habit, scope: scope, containing: date)
@@ -136,39 +137,146 @@ struct StatisticsOverviewView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: habit.icon)
-                    .font(.title3)
-                    .frame(width: 42, height: 42)
-                    .background(Color(hex: habit.colorHex).opacity(0.30))
-                    .clipShape(.circle)
+            // MARK: - Statistic Properties
+            if !usesSimplifiedMode {
+                HabitNameBlock(habit: habit)
 
-                VStack(alignment: .leading, spacing: 3) {
+                StatisticSummaryTable(summary: summary, habit: habit)
+            }
+
+            // MARK: - Statistic check mark
+            StatisticCheckMarkView(
+                habit: habit,
+                scope: scope,
+                date: date,
+                usesCompactHeader: usesSimplifiedMode
+            )
+        }
+        .padding()
+    }
+}
+
+struct HabitNameBlock: View {
+    let habit: Habit
+    
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: habit.icon)
+                .font(.title3)
+                .frame(width: 42, height: 42)
+                .background(Color(hex: habit.colorHex).opacity(0.30))
+                .clipShape(.circle)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
                     Text(habit.name)
                         .font(.headline)
                         .fontDesign(.rounded)
 
-                    Text("\(habit.currentStreak) current streak")
+                    if habit.isArchived {
+                        Text("Archived")
+                            .font(.caption2.weight(.semibold))
+                            .fontDesign(.rounded)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.secondary.opacity(0.14))
+                            .clipShape(.capsule)
+                    }
+                }
+
+                Text("\(habit.currentStreak) current streak")
+                    .font(.caption)
+                    .fontDesign(.rounded)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+    }
+}
+
+struct StatisticCheckMarkView: View {
+    let habit: Habit
+    let scope: StatisticsScope
+    let date: Date
+    let usesCompactHeader: Bool
+
+    var body: some View {
+        switch scope {
+        case .week:
+            WeeklyStatisticsView(
+                habit: habit,
+                date: date,
+                usesCompactHeader: usesCompactHeader
+            )
+        case .month:
+            MonthlyStatisticsView(
+                habit: habit,
+                date: date,
+                usesCompactHeader: usesCompactHeader
+            )
+        case .year:
+            YearlyStatisticsView(
+                habit: habit,
+                date: date,
+                usesCompactHeader: usesCompactHeader
+            )
+        }
+    }
+}
+
+struct StatisticPeriodHeader: View {
+    let habit: Habit
+    let progress: Double
+    let title: String
+    let subtitle: String
+    let isCompact: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            CircularWithTitleProgressView(
+                progress: progress,
+                title: "\(Int(progress * 100))%",
+                size: isCompact ? 44 : 52,
+                tintColor: Color(hex: habit.colorHex),
+                fontWeight: .bold
+            )
+
+            VStack(alignment: .leading, spacing: 4) {
+                if isCompact {
+                    HStack(spacing: 8) {
+                        Text(habit.name)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .fontDesign(.rounded)
+
+                        if habit.isArchived {
+                            Text("Archived")
+                                .font(.caption2.weight(.semibold))
+                                .fontDesign(.rounded)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(.secondary.opacity(0.14))
+                                .clipShape(.capsule)
+                        }
+                    }
+                }
+
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .fontDesign(.rounded)
+
+                if !isCompact {
+                    Text(subtitle)
                         .font(.caption)
                         .fontDesign(.rounded)
                         .foregroundStyle(.secondary)
                 }
-
-                Spacer()
             }
 
-            StatisticSummaryTable(summary: summary, habit: habit)
-
-            switch scope {
-            case .week:
-                WeeklyStatisticsView(habit: habit, date: date)
-            case .month:
-                MonthlyStatisticsView(habit: habit, date: date)
-            case .year:
-                YearlyStatisticsView(habit: habit, date: date)
-            }
+            Spacer(minLength: 0)
         }
-        .padding()
     }
 }
 
@@ -254,6 +362,7 @@ struct WeeklyStatisticsView: View {
     @Environment(HabitStore.self) private var habitStore
     let habit: Habit
     let date: Date
+    let usesCompactHeader: Bool
 
     private var weekDates: [Date] {
         habitStore.weekDates(containing: date)
@@ -269,29 +378,13 @@ struct WeeklyStatisticsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 12) {
-                let weekProgress = habitStore.completionRatioForWeek(for: habit, containing: date)
-
-                CircularWithTitleProgressView(
-                    progress: weekProgress,
-                    title: "\(Int(weekProgress * 100))%",
-                    size: 52,
-                    tintColor: Color(hex: habit.colorHex),
-                    fontWeight: .bold
-                )
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(weekTitle)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .fontDesign(.rounded)
-
-                    Text("Weekly progress")
-                        .font(.caption)
-                        .fontDesign(.rounded)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            StatisticPeriodHeader(
+                habit: habit,
+                progress: habitStore.completionRatioForWeek(for: habit, containing: date),
+                title: weekTitle,
+                subtitle: "Weekly progress",
+                isCompact: usesCompactHeader
+            )
 
             HStack(alignment: .bottom, spacing: 8) {
                 ForEach(weekDates, id: \.self) { day in
@@ -350,6 +443,7 @@ struct MonthlyStatisticsView: View {
     @Environment(HabitStore.self) private var habitStore
     let habit: Habit
     let date: Date
+    let usesCompactHeader: Bool
 
     private let itemSpacing: CGFloat = AppConstant.screenWidth / 40
 
@@ -371,29 +465,13 @@ struct MonthlyStatisticsView: View {
     var body: some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: itemSpacing), count: 7)
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 12) {
-                let monthProgress = habitStore.completionRatioForMonth(for: habit, containing: date)
-
-                CircularWithTitleProgressView(
-                    progress: monthProgress,
-                    title: "\(Int(monthProgress * 100))%",
-                    size: 52,
-                    tintColor: Color(hex: habit.colorHex),
-                    fontWeight: .bold
-                )
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(monthTitle)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .fontDesign(.rounded)
-
-                    Text("Monthly progress")
-                        .font(.caption)
-                        .fontDesign(.rounded)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            StatisticPeriodHeader(
+                habit: habit,
+                progress: habitStore.completionRatioForMonth(for: habit, containing: date),
+                title: monthTitle,
+                subtitle: "Monthly progress",
+                isCompact: usesCompactHeader
+            )
 
             LazyVGrid(columns: columns, spacing: itemSpacing) {
                 ForEach(habitStore.orderedWeekdays, id: \.self) { weekday in
@@ -480,6 +558,7 @@ struct YearlyStatisticsView: View {
     @Environment(HabitStore.self) private var habitStore
     let habit: Habit
     let date: Date
+    let usesCompactHeader: Bool
 
     private let cellSize: CGFloat = 10
 
@@ -519,29 +598,13 @@ struct YearlyStatisticsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 12) {
-                let yearProgress = habitStore.completionRatioForYear(for: habit, containing: date)
-
-                CircularWithTitleProgressView(
-                    progress: yearProgress,
-                    title: "\(Int(yearProgress * 100))%",
-                    size: 52,
-                    tintColor: Color(hex: habit.colorHex),
-                    fontWeight: .bold
-                )
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(yearTitle)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .fontDesign(.rounded)
-
-                    Text("Yearly progress")
-                        .font(.caption)
-                        .fontDesign(.rounded)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            StatisticPeriodHeader(
+                habit: habit,
+                progress: habitStore.completionRatioForYear(for: habit, containing: date),
+                title: yearTitle,
+                subtitle: "Yearly progress",
+                isCompact: usesCompactHeader
+            )
 
             AppScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 8) {

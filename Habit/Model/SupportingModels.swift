@@ -35,6 +35,7 @@ final class UserProfile {
 
     // App preferences
     var weekStartsOnMonday: Bool
+    var usesSimplifiedStatisticsMode: Bool = false
     var defaultReminderTime: Date?
     var themeColorHex: String
 
@@ -48,6 +49,7 @@ final class UserProfile {
         self.id = UUID()
         self.displayName = displayName
         self.weekStartsOnMonday = true
+        self.usesSimplifiedStatisticsMode = false
         self.themeColorHex = "#4ECDC4"
         self.totalCompletions = 0
         self.totalHabitsCreated = 0

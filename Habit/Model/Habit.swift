@@ -81,6 +81,10 @@ enum GoalType: String, Codable {
 }
 
 extension Habit {
+    var isArchived: Bool {
+        archivedAt != nil
+    }
+
     func entry(for date: Date) -> HabitEntry? {
         let targetDate = AppCalendar.current.startOfDay(for: date)
 

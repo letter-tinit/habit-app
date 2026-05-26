@@ -41,6 +41,7 @@ struct MainTabScreen: View {
     @State private var activeTab: AppTab = .home
     @State private var homeRouter = HomeRouter()
     @State private var profileRouter = ProfileRouter()
+    @State private var statisticalRouter = StatisticalRouter()
 
     var body: some View {
         TabView(selection: $activeTab) {
@@ -63,7 +64,9 @@ struct MainTabScreen: View {
             }
 
             Tab(value: AppTab.statistic) {
-                StatisticalScreen()
+                AppNavigationStack(path: $statisticalRouter.path) {
+                    StatisticalScreen()
+                } destination: { _ in }
             } label: {
                 Image(systemName: AppTab.statistic.symbolImage)
             }

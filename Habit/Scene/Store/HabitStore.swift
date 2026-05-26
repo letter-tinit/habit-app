@@ -22,7 +22,7 @@ final class HabitStore {
     // MARK: - Dependencies
     private var modelContext: ModelContext
 
-    // MARK: - HOME PROPERTY
+    // MARK: - HOME
     var homeTitle: String = AppString.Home.today
     var habits: [Habit] = []
     var filteredHabit: [Habit] {
@@ -40,7 +40,17 @@ final class HabitStore {
         : [0, 1, 2, 3, 4, 5, 6]
     }
 
-    // MARK: - PROFILE PROPERTY
+    // MARK: - STATISTICAL
+    var usesCompactStatisticsView: Bool = false {
+        didSet {
+            guard usesCompactStatisticsView != oldValue else {
+                return
+            }
+            updateUsesSimplifiedStatisticsMode(usesCompactStatisticsView)
+        }
+    }
+
+    // MARK: - PROFILE
     var userProfile: UserProfile?
 
     // MARK: - Constructor
@@ -49,8 +59,11 @@ final class HabitStore {
         fetchUserProfile()
         fetchHabits()
     }
+}
 
-    // MARK: - HOME SCREEN
+// MARK: - Home
+
+extension HabitStore {
     func backToday() {
         didChangeSelecteDate(Date())
     }
@@ -77,8 +90,11 @@ final class HabitStore {
     func isSelectedDay(_ date: Date) -> Bool {
         date.isEqual(with: selectedDate)
     }
+}
 
-    // MARK: - SWIFT DATE UTIL
+// MARK: - Profile
+
+extension HabitStore {
     func fetchUserProfile() {
         let descriptor = FetchDescriptor<UserProfile>()
 
@@ -86,6 +102,7 @@ final class HabitStore {
             if let existingProfile = try modelContext.fetch(descriptor).first {
                 userProfile = existingProfile
                 AppCalendar.weekStartsOnMonday = existingProfile.weekStartsOnMonday
+                usesCompactStatisticsView = existingProfile.usesSimplifiedStatisticsMode
             } else {
                 let profile = UserProfile()
                 modelContext.insert(profile)
@@ -109,6 +126,15 @@ final class HabitStore {
         _ = save()
     }
 
+    func updateUsesSimplifiedStatisticsMode(_ enabled: Bool) {
+        if userProfile == nil {
+            fetchUserProfile()
+        }
+
+        userProfile?.usesSimplifiedStatisticsMode = enabled
+        _ = save()
+    }
+
     func updateProfile(displayName: String, avatarOriginalData: Data?, avatarData: Data?) {
         if userProfile == nil {
             fetchUserProfile()
@@ -119,7 +145,11 @@ final class HabitStore {
         userProfile?.avatarData = avatarData
         _ = save()
     }
+}
 
+// MARK: - Habits
+
+extension HabitStore {
     func fetchHabits() {
         let descriptor = FetchDescriptor<Habit>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
@@ -168,6 +198,39 @@ final class HabitStore {
         }
     }
 
+    @discardableResult
+    func archiveHabit(_ habit: Habit) -> Bool {
+        guard habit.archivedAt == nil else { return true }
+
+        habit.archivedAt = Date()
+
+        if save() {
+            fetchHabits()
+            return true
+        } else {
+            habit.archivedAt = nil
+            fetchHabits()
+            return false
+        }
+    }
+
+    @discardableResult
+    func unarchiveHabit(_ habit: Habit) -> Bool {
+        guard habit.archivedAt != nil else { return true }
+
+        let archivedAt = habit.archivedAt
+        habit.archivedAt = nil
+
+        if save() {
+            fetchHabits()
+            return true
+        } else {
+            habit.archivedAt = archivedAt
+            fetchHabits()
+            return false
+        }
+    }
+
     func habit(id: UUID) -> Habit? {
         habits.first { $0.id == id }
     }
@@ -205,7 +268,11 @@ final class HabitStore {
         fetchHabits()
         return true
     }
+}
 
+// MARK: - Habit Entries
+
+extension HabitStore {
     func updateHabitEntry(_ habit: Habit, completedCount: Int, note: String? = nil) {
         let calendar = AppCalendar.current
         let targetDate = calendar.startOfDay(for: selectedDate)
@@ -247,8 +314,12 @@ final class HabitStore {
         updateStreaks(for: habit)
         _ = save()
     }
+}
 
-    private func updateStreaks(for habit: Habit) {
+// MARK: - Streak Helpers
+
+private extension HabitStore {
+    func updateStreaks(for habit: Habit) {
         let calendar = AppCalendar.current
         let completedDates = Set(
             habit.entries
@@ -277,7 +348,7 @@ final class HabitStore {
         )
     }
 
-    private func longestStreak(
+    func longestStreak(
         completedDates: Set<Date>,
         habit: Habit,
         calendar: Calendar
@@ -304,7 +375,7 @@ final class HabitStore {
         return longestStreak
     }
 
-    private func streakEnding(
+    func streakEnding(
         at date: Date,
         completedDates: Set<Date>,
         habit: Habit,
@@ -330,7 +401,7 @@ final class HabitStore {
         return streak
     }
 
-    private func previousScheduledDate(
+    func previousScheduledDate(
         before date: Date,
         habit: Habit,
         calendar: Calendar
@@ -352,8 +423,12 @@ final class HabitStore {
 
         return date
     }
+}
 
-    private func shouldSchedule(
+// MARK: - Scheduling
+
+private extension HabitStore {
+    func shouldSchedule(
         _ habit: Habit,
         on date: Date,
         calendar: Calendar
@@ -361,8 +436,15 @@ final class HabitStore {
         let day = calendar.startOfDay(for: date)
         let createdDay = calendar.startOfDay(for: habit.createdAt)
 
-        guard day >= createdDay, habit.archivedAt == nil else {
+        guard day >= createdDay else {
             return false
+        }
+
+        if let archivedAt = habit.archivedAt {
+            let archivedDay = calendar.startOfDay(for: archivedAt)
+            guard day <= archivedDay else {
+                return false
+            }
         }
 
         let weekday = calendar.component(.weekday, from: day) - 1
@@ -378,8 +460,12 @@ final class HabitStore {
             return habit.targetDaysOfWeek.contains(weekday)
         }
     }
+}
 
-    private func save() -> Bool {
+// MARK: - Persistence
+
+private extension HabitStore {
+    func save() -> Bool {
         do {
             try modelContext.save()
             return true
@@ -388,29 +474,13 @@ final class HabitStore {
             return false
         }
     }
+}
 
-    // MARK: - STATISTICS
+// MARK: - Statistics
+
+extension HabitStore {
     func monthDates(containing date: Date) -> [Date] {
-        let calendar = AppCalendar.current
-
-        guard let monthInterval = calendar.dateInterval(of: .month, for: date) else {
-            return []
-        }
-
-        var dates: [Date] = []
-        var currentDate = calendar.startOfDay(for: monthInterval.start)
-
-        while currentDate < monthInterval.end {
-            dates.append(currentDate)
-
-            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
-                break
-            }
-
-            currentDate = nextDate
-        }
-
-        return dates
+        dates(in: .month, containing: date)
     }
 
     func weekDates(containing date: Date) -> [Date] {
@@ -534,49 +604,11 @@ final class HabitStore {
     }
 
     func completionRatioForYear(containing date: Date) -> Double {
-        let calendar = AppCalendar.current
-
-        guard let yearInterval = calendar.dateInterval(of: .year, for: date) else {
-            return 0
-        }
-
-        var dates: [Date] = []
-        var currentDate = calendar.startOfDay(for: yearInterval.start)
-
-        while currentDate < yearInterval.end {
-            dates.append(currentDate)
-
-            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
-                break
-            }
-
-            currentDate = nextDate
-        }
-
-        return completionRatio(for: dates)
+        completionRatio(for: yearDates(containing: date))
     }
 
     func completionRatioForYear(for habit: Habit, containing date: Date) -> Double {
-        let calendar = AppCalendar.current
-
-        guard let yearInterval = calendar.dateInterval(of: .year, for: date) else {
-            return 0
-        }
-
-        var dates: [Date] = []
-        var currentDate = calendar.startOfDay(for: yearInterval.start)
-
-        while currentDate < yearInterval.end {
-            dates.append(currentDate)
-
-            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
-                break
-            }
-
-            currentDate = nextDate
-        }
-
-        return completionRatio(for: habit, dates: dates)
+        completionRatio(for: habit, dates: yearDates(containing: date))
     }
 
     func statisticSummary(
@@ -601,8 +633,12 @@ final class HabitStore {
     func yearDates(containing date: Date) -> [Date] {
         dates(in: .year, containing: date)
     }
+}
 
-    private func dates(
+// MARK: - Statistics Helpers
+
+private extension HabitStore {
+    func dates(
         in component: Calendar.Component,
         containing date: Date
     ) -> [Date] {
@@ -628,7 +664,7 @@ final class HabitStore {
         return dates
     }
 
-    private func completionRatio(for dates: [Date]) -> Double {
+    func completionRatio(for dates: [Date]) -> Double {
         let validDates = dates.filter { date in
             habits.contains {
                 shouldSchedule($0, on: date, calendar: AppCalendar.current)
@@ -646,7 +682,7 @@ final class HabitStore {
         return totalRatio / Double(validDates.count)
     }
 
-    private func completionRatio(for habit: Habit, dates: [Date]) -> Double {
+    func completionRatio(for habit: Habit, dates: [Date]) -> Double {
         let calendar = AppCalendar.current
         let validDates = dates.filter {
             shouldSchedule(habit, on: $0, calendar: calendar)
@@ -663,11 +699,10 @@ final class HabitStore {
         return totalRatio / Double(validDates.count)
     }
 
-    private func statisticSummary(for habit: Habit, dates: [Date]) -> HabitStatisticSummary {
+    func statisticSummary(for habit: Habit, dates: [Date]) -> HabitStatisticSummary {
         let calendar = AppCalendar.current
-        let scheduledDates = dates.filter {
-            shouldSchedule(habit, on: $0, calendar: calendar)
-        }
+        let scheduledDates = dates.filter { shouldSchedule(habit, on: $0, calendar: calendar) }
+        let archivedDay = habit.archivedAt.map { calendar.startOfDay(for: $0) }
 
         guard !scheduledDates.isEmpty else {
             return HabitStatisticSummary(
@@ -680,7 +715,11 @@ final class HabitStore {
         }
 
         let entriesByDate = habit.entries.reduce(into: [Date: HabitEntry]()) { result, entry in
-            result[calendar.startOfDay(for: entry.date)] = entry
+            let entryDay = calendar.startOfDay(for: entry.date)
+            if let archivedDay, entryDay > archivedDay {
+                return
+            }
+            result[entryDay] = entry
         }
 
         let completedCount = scheduledDates.reduce(0) { result, date in
