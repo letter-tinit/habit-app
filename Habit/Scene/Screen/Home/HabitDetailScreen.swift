@@ -29,6 +29,8 @@ struct HabitDetailContent: View {
     @Bindable var habit: Habit
     @FocusState private var isFocused: Bool
     @State private var showEditHabit = false
+    @State private var showsArchiveConfirmation = false
+    @State private var showsDeleteConfirmation = false
 
     var body: some View {
         BaseScreen($habit.name) {
@@ -98,15 +100,7 @@ struct HabitDetailContent: View {
 
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    let success: Bool
-                    if habit.isArchived {
-                        success = habitStore.unarchiveHabit(habit)
-                    } else {
-                        success = habitStore.archiveHabit(habit)
-                    }
-                    if success {
-                        dismiss()
-                    }
+                    showsArchiveConfirmation = true
                 } label: {
                     Image(systemName: habit.isArchived ? "tray.and.arrow.up" : "archivebox")
                 }
@@ -114,13 +108,41 @@ struct HabitDetailContent: View {
 
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .destructive) {
-                    if habitStore.deleteHabit(id: habitID) {
-                        dismiss()
-                    }
+                    showsDeleteConfirmation = true
                 } label: {
                     Image(systemName: "trash")
                 }
             }
+        }
+        .confirmationDialog(
+            habit.isArchived ? "Unarchive habit?" : "Archive habit?",
+            isPresented: $showsArchiveConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button(habit.isArchived ? "Unarchive Habit" : "Archive Habit", role: habit.isArchived ? nil : .destructive) {
+                archiveHabit()
+            }
+
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if habit.isArchived {
+                Text("This habit will return to your active habit list.")
+            } else {
+                Text("This habit will be hidden from future days, but existing history will be kept.")
+            }
+        }
+        .confirmationDialog(
+            "Delete habit?",
+            isPresented: $showsDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Habit", role: .destructive) {
+                deleteHabit()
+            }
+
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes the habit, entries, reminders, and history. This cannot be undone.")
         }
         .sheet(isPresented: $showEditHabit) {
             NavigationStack {
@@ -140,6 +162,20 @@ struct HabitDetailContent: View {
 
     private var goalTitle: String {
         habit.goalType == .todo ? "Complete once" : "\(habit.goalCount) \(habit.goalUnit)"
+    }
+
+    private func archiveHabit() {
+        if habit.isArchived {
+            habitStore.unarchiveHabit(habit)
+        } else {
+            habitStore.archiveHabit(habit)
+        }
+    }
+
+    private func deleteHabit() {
+        if habitStore.deleteHabit(id: habitID) {
+            dismiss()
+        }
     }
 
     private func detailRow(title: String, value: String) -> some View {

@@ -34,11 +34,13 @@ struct HomeScreen: View {
                             }
                             .padding(.horizontal)
                             .swipeActions {
-                                Button {
-                                    resetHabit(habit)
-                                } label: {
-                                    Image(systemName: "arrow.counterclockwise")
-                                        .tint(.skyBlue)
+                                if habitStore.canEditSelectedDateEntry {
+                                    Button {
+                                        resetHabit(habit)
+                                    } label: {
+                                        Image(systemName: "arrow.counterclockwise")
+                                            .tint(.skyBlue)
+                                    }
                                 }
                             }
                         }

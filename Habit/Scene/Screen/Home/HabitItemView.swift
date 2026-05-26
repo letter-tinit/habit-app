@@ -26,6 +26,7 @@ struct HabitItemView: View {
     private let currentStreak: Int
     private let longestStreak: Int
     private let lastCompleteStreak: Date?
+    private let canEditEntry: Bool
 
     // MARK: - UI State
     private let cornerRadius: CGFloat = 12.0
@@ -53,6 +54,7 @@ struct HabitItemView: View {
         self.currentStreak = habit.currentStreak
         self.longestStreak = habit.longestStreak
         self.lastCompleteStreak = habit.lastCompletedDate
+        self.canEditEntry = !selectedDate.isFutureDay()
     }
 
     var body: some View {
@@ -137,6 +139,11 @@ struct HabitItemView: View {
                     .fontDesign(.rounded)
                 } else {
                     Button {
+                        guard canEditEntry else {
+                            Haptic.warning()
+                            return
+                        }
+
                         baseAnimation {
                             Haptic.impact(.heavy)
                             if goalType == .todo {
@@ -152,6 +159,7 @@ struct HabitItemView: View {
                     }
                     .padding(8)
                     .buttonStyle(.plain)
+                    .disabled(!canEditEntry)
                     .glassEffect(
                         .regular,
                         in: .circle
@@ -162,6 +170,7 @@ struct HabitItemView: View {
             .shadow(color: .black.opacity(0.3), radius: 1)
         }
         // MARK: - ITEM STYLE
+        .opacity(canEditEntry ? 1 : 0.72)
         .mask {
             RoundedRectangle(cornerRadius: cornerRadius)
         }

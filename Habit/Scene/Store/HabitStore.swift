@@ -26,7 +26,18 @@ final class HabitStore {
     var profileTitle: String = AppString.ScreenTitle.profile
     var habits: [Habit] = []
     var filteredHabit: [Habit] {
-        habits.filter(isHabit)
+        habits
+            .filter(isHabit)
+            .sorted { first, second in
+                let firstIsComplete = isComplete(for: first, on: selectedDate)
+                let secondIsComplete = isComplete(for: second, on: selectedDate)
+
+                if firstIsComplete != secondIsComplete {
+                    return !firstIsComplete
+                }
+
+                return first.sortOrder < second.sortOrder
+            }
     }
     var selectedHabit: Habit?
     private(set) var selectedDate: Date = Date()
@@ -358,7 +369,16 @@ extension HabitStore {
 // MARK: - Habit Entries
 
 extension HabitStore {
+    var canEditSelectedDateEntry: Bool {
+        !selectedDate.isFutureDay()
+    }
+
     func updateHabitEntry(_ habit: Habit, completedCount: Int, note: String? = nil) {
+        guard canEditSelectedDateEntry else {
+            Haptic.warning()
+            return
+        }
+
         let calendar = AppCalendar.current
         let targetDate = calendar.startOfDay(for: selectedDate)
 
@@ -382,6 +402,11 @@ extension HabitStore {
     }
 
     func resetHabitEntry(_ habit: Habit) {
+        guard canEditSelectedDateEntry else {
+            Haptic.warning()
+            return
+        }
+
         let calendar = AppCalendar.current
         let targetDate = calendar.startOfDay(for: selectedDate)
 

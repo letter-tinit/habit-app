@@ -44,4 +44,8 @@ extension Date {
     func isEqual(with targetDate: Date) -> Bool {
         AppCalendar.current.isDate(self, inSameDayAs: targetDate)
     }
+
+    func isFutureDay() -> Bool {
+        AppCalendar.current.startOfDay(for: self) > AppCalendar.current.startOfDay(for: Date())
+    }
 }
