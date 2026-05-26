@@ -66,7 +66,7 @@ struct CreateHabitScreen: View {
         _colorHex = State(initialValue: habit?.colorHex ?? AppConstant.defaultColor)
         _frequency = State(initialValue: habit?.frequency ?? .daily)
         _selectedDays = State(initialValue: Set(habit?.targetDaysOfWeek ?? Array(0...6)))
-        _goalType = State(initialValue: habit?.goalType ?? .todo)
+        _goalType = State(initialValue: habit?.goalType ?? .count)
         _goalCountText = State(initialValue: String(habit?.goalCount ?? 1))
         _goalUnit = State(initialValue: habit?.goalUnit ?? "times")
     }
@@ -131,13 +131,17 @@ struct CreateHabitScreen: View {
                     }
                 } label: {
                     Image(systemName: icon)
+                        .resizable()
+                        .padding()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 60, height: 60)
+                        .foregroundStyle(Color.init(hex: colorHex))
                 }
-                .aspectRatio(1, contentMode: .fill)
-                .padding()
                 .liquidGlassSurface(cornerRadius: 12, interactive: true)
 
                 TextField("Description", text: $habitDescription)
-                    .padding()
+                    .frame(height: 60)
+                    .padding(.horizontal)
                     .liquidGlassSurface(cornerRadius: 12, interactive: true)
             }
         }
@@ -175,7 +179,7 @@ struct CreateHabitScreen: View {
                             .foregroundStyle(selectedDays.contains(weekday) ? .white : .primary)
                             .background(
                                 selectedDays.contains(weekday)
-                                ? Color.rosePink.opacity(0.58)
+                                ? Color.cyan.opacity(0.48)
                                 : Color.primary.opacity(0.06)
                             )
                             . mask {
@@ -204,8 +208,8 @@ struct CreateHabitScreen: View {
                 .fontDesign(.rounded)
 
             Picker("Goal type", selection: $goalType) {
-                Text("Todo").tag(GoalType.todo)
                 Text("Count").tag(GoalType.count)
+                Text("Todo").tag(GoalType.todo)
             }
             .pickerStyle(.segmented)
             .onChange(of: goalType) { _, newValue in
@@ -466,7 +470,7 @@ private struct SymbolPickerSheet: View {
                                 .foregroundStyle(selectedSymbol == symbol ? .white : .primary)
                                 .background(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(selectedSymbol == symbol ? Color.rosePink : Color.primary.opacity(0.06))
+                                        .fill(selectedSymbol == symbol ? Color.cyan : Color.primary.opacity(0.06))
                                 )
                         }
                         .buttonStyle(.plain)

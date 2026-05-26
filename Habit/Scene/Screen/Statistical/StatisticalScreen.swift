@@ -11,7 +11,7 @@ struct StatisticalScreen: View {
     @Environment(HabitStore.self) private var habitStore
     @State private var statisticsScope: StatisticsScope = .month
     @State private var statisticsDate: Date = Date()
-    @State private var title: String = "Statistical"
+    @State private var title: String = "STATISTICAL"
 
     var body: some View {
         BaseScreen($title, backgroundType: .mint) {

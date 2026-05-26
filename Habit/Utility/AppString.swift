@@ -16,7 +16,7 @@ enum AppString {
     }
     
     enum ScreenTitle {
-        static let statistical = "Statistical"
-        static let profile = "Profile"
+        static let statistical = "STATISTICAL"
+        static let profile = "PROFILE"
     }
 }

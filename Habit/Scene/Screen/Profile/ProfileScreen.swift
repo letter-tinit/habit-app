@@ -13,7 +13,6 @@ import UniformTypeIdentifiers
 struct ProfileScreen: View {
     @Environment(ProfileRouter.self) private var router
     @Environment(HabitStore.self) private var habitStore
-    @State private var title = "Profile"
     @State private var backupDocument = HabitBackupDocument()
     @State private var isExportingBackup = false
     @State private var isImportingBackup = false
@@ -23,7 +22,8 @@ struct ProfileScreen: View {
     @State private var backupMessage: BackupMessage?
 
     var body: some View {
-        BaseScreen($title, backgroundType: .cyan) {
+        @Bindable var habitStore = habitStore
+        BaseScreen($habitStore.profileTitle, backgroundType: .cyan) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     profileSection

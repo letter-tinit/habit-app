@@ -23,6 +23,7 @@ final class HabitStore {
     private var modelContext: ModelContext
 
     var homeTitle: String = AppString.Home.today
+    var profileTitle: String = AppString.ScreenTitle.profile
     var habits: [Habit] = []
     var filteredHabit: [Habit] {
         return habits.filter(isHabit)
@@ -102,6 +103,7 @@ extension HabitStore {
                 userProfile = existingProfile
                 AppCalendar.weekStartsOnMonday = existingProfile.weekStartsOnMonday
                 usesCompactStatisticsView = existingProfile.usesSimplifiedStatisticsMode
+                profileTitle = userProfile?.displayName ?? AppString.ScreenTitle.profile
             } else {
                 let profile = UserProfile()
                 modelContext.insert(profile)

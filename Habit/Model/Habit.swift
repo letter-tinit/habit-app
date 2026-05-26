@@ -76,8 +76,8 @@ enum HabitFrequency: String, Codable {
 }
 
 enum GoalType: String, Codable {
-    case todo        // simply completed or not
     case count          // e.g. drink 8 glasses of water
+    case todo        // simply completed or not
 }
 
 extension Habit {

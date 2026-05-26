@@ -88,6 +88,7 @@ enum AppConstant {
         
         // Suppliment
         "heart.text.clipboard",
-        "sparkle.text.clipboard"
+        "sparkle.text.clipboard",
+        "guitars.fill"
     ]
 }
