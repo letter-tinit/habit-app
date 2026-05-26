@@ -52,6 +52,7 @@ struct AggregateStatisticalScreen: View {
                             }
                         }
                         .padding(.horizontal)
+                        .padding(.bottom)
                     }
                 }
             }
@@ -139,7 +140,7 @@ private struct AggregateWeekChart: View {
     }
 
     private func weekDayColumn(for date: Date) -> some View {
-        let progress = habitStore.completionRatio(on: date)
+        let progress = habitStore.statisticSummary(dates: [date]).progress
 
         return VStack(spacing: 7) {
             Text(date.toString(withFormat: .dayNameSymbol))
@@ -211,7 +212,7 @@ private struct AggregateMonthChart: View {
     }
 
     private func dateCell(_ date: Date) -> some View {
-        let progress = habitStore.completionRatio(on: date)
+        let progress = habitStore.statisticSummary(dates: [date]).progress
 
         return ZStack {
             RoundedRectangle(cornerRadius: itemSpacing)
@@ -255,7 +256,7 @@ private struct AggregateYearChart: View {
         let calendar = AppCalendar.current
         let year = calendar.component(.year, from: date)
         let monthDate = calendar.date(from: DateComponents(year: year, month: month)) ?? date
-        let progress = habitStore.completionRatioForMonth(containing: monthDate)
+        let progress = habitStore.statisticSummary(scope: .month, containing: monthDate).progress
 
         return VStack(spacing: 8) {
             Text(monthDate.toString(withFormat: .custom("MMM")))

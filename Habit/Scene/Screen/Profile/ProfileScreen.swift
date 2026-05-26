@@ -19,6 +19,7 @@ struct ProfileScreen: View {
     @State private var pendingImportData: Data?
     @State private var pendingImportSummary: HabitBackupSummary?
     @State private var showsImportConfirmation = false
+    @State private var safetyBackupURLs: [URL] = []
     @State private var backupMessage: BackupMessage?
 
     var body: some View {
@@ -38,6 +39,7 @@ struct ProfileScreen: View {
         }
         .onAppear {
             habitStore.fetchUserProfile()
+            safetyBackupURLs = habitStore.safetyBackups()
         }
         .fileExporter(
             isPresented: $isExportingBackup,
@@ -207,6 +209,26 @@ struct ProfileScreen: View {
                 ) {
                     isImportingBackup = true
                 }
+
+                if !safetyBackupURLs.isEmpty {
+                    Divider()
+                        .padding(.leading, 52)
+
+                    Menu {
+                        ForEach(safetyBackupURLs, id: \.self) { url in
+                            Button(safetyBackupTitle(for: url)) {
+                                importSafetyBackup(from: url)
+                            }
+                        }
+                    } label: {
+                        backupRow(
+                            title: "Restore Safety Backup",
+                            subtitle: "Recover data saved before the last import",
+                            systemImage: "clock.arrow.circlepath"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(.vertical, 4)
             .liquidGlassSurface(cornerRadius: 16, interactive: true)
@@ -220,30 +242,38 @@ struct ProfileScreen: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: systemImage)
-                    .font(.title3.weight(.semibold))
-                    .frame(width: 38, height: 38)
-                    .background(Color.primary.opacity(0.06))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.body)
-                        .fontWeight(.semibold)
-                        .fontDesign(.rounded)
-
-                    Text(subtitle)
-                        .font(.caption)
-                        .fontDesign(.rounded)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-            }
-            .padding()
+            backupRow(title: title, subtitle: subtitle, systemImage: systemImage)
         }
         .buttonStyle(.plain)
+    }
+
+    private func backupRow(
+        title: String,
+        subtitle: String,
+        systemImage: String
+    ) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: systemImage)
+                .font(.title3.weight(.semibold))
+                .frame(width: 38, height: 38)
+                .background(Color.primary.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.body)
+                    .fontWeight(.semibold)
+                    .fontDesign(.rounded)
+
+                Text(subtitle)
+                    .font(.caption)
+                    .fontDesign(.rounded)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding()
     }
 
     private var frequencyPreviewSection: some View {
@@ -315,6 +345,7 @@ struct ProfileScreen: View {
     private func handleExportResult(_ result: Result<URL, Error>) {
         switch result {
         case .success:
+            safetyBackupURLs = habitStore.safetyBackups()
             backupMessage = BackupMessage(
                 title: "Export Ready",
                 message: currentBackupSummaryMessage
@@ -363,6 +394,7 @@ struct ProfileScreen: View {
             try habitStore.importBackupData(pendingImportData)
             self.pendingImportData = nil
             self.pendingImportSummary = nil
+            safetyBackupURLs = habitStore.safetyBackups()
             backupMessage = BackupMessage(
                 title: "Import Complete",
                 message: "Your backup was restored successfully. A safety backup of your previous data was saved inside the app's Backups folder."
@@ -373,6 +405,24 @@ struct ProfileScreen: View {
                 message: error.localizedDescription
             )
         }
+    }
+
+    private func importSafetyBackup(from url: URL) {
+        do {
+            let data = try Data(contentsOf: url)
+            pendingImportSummary = try habitStore.backupSummary(for: data)
+            pendingImportData = data
+            showsImportConfirmation = true
+        } catch {
+            backupMessage = BackupMessage(
+                title: "Safety Restore Failed",
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    private func safetyBackupTitle(for url: URL) -> String {
+        url.deletingPathExtension().lastPathComponent
     }
 }
 

@@ -9,10 +9,6 @@ import SwiftUI
 import SwiftData
 
 struct CreateHabitScreen: View {
-    private enum Field {
-        case habitName
-    }
-
     @Environment(HabitStore.self) private var habitStore
     @Environment(\.dismiss) private var dismiss
 
@@ -29,8 +25,6 @@ struct CreateHabitScreen: View {
     @State private var goalCountText: String
     @State private var goalUnit: String
     @State private var showSymbolPicker = false
-    @State private var hasClearedDefaultHabitName = false
-    @FocusState private var focusedField: Field?
 
     private let colorOptions = AppConstant.colorOptions
 
@@ -60,7 +54,7 @@ struct CreateHabitScreen: View {
     init(habit: Habit? = nil) {
         habitToEdit = habit
         _screenTitle = State(initialValue: habit == nil ? "New Habit" : "Edit Habit")
-        _name = State(initialValue: habit?.name ?? "Habit Name")
+        _name = State(initialValue: habit?.name ?? "")
         _icon = State(initialValue: habit?.icon ?? "star.fill")
         _habitDescription = State(initialValue: habit?.habitDescription ?? "")
         _colorHex = State(initialValue: habit?.colorHex ?? AppConstant.defaultColor)
@@ -116,13 +110,9 @@ struct CreateHabitScreen: View {
                 .fontDesign(.rounded)
 
             TextField("Habit name", text: $name)
-                .focused($focusedField, equals: .habitName)
                 .textInputAutocapitalization(.words)
                 .padding()
                 .liquidGlassSurface(cornerRadius: 12, interactive: true)
-                .onChange(of: focusedField) { _, newValue in
-                    clearDefaultHabitNameIfNeeded(isFocused: newValue == .habitName)
-                }
 
             HStack(spacing: 12) {
                 Button {
@@ -392,19 +382,6 @@ struct CreateHabitScreen: View {
         }
 
         dismiss()
-    }
-
-    private func clearDefaultHabitNameIfNeeded(isFocused: Bool) {
-        guard isFocused,
-              !isEditing,
-              !hasClearedDefaultHabitName,
-              name == "Habit Name"
-        else {
-            return
-        }
-
-        name = ""
-        hasClearedDefaultHabitName = true
     }
 
     private func applyDefaultDays(for frequency: HabitFrequency) {

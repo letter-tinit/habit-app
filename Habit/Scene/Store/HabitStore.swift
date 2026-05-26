@@ -177,6 +177,26 @@ extension HabitStore {
         return backup.summary
     }
 
+    func safetyBackups() -> [URL] {
+        do {
+            let directory = try backupDirectory()
+            let backupURLs = try FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.creationDateKey],
+                options: [.skipsHiddenFiles]
+            )
+
+            return backupURLs
+                .filter { $0.pathExtension.lowercased() == "json" }
+                .sorted { first, second in
+                    creationDate(for: first) > creationDate(for: second)
+                }
+        } catch {
+            Logger.error("Failed to load safety backups: \(error)")
+            return []
+        }
+    }
+
     func createPreImportBackup() throws -> URL {
         let data = try exportBackupData()
         let directory = try backupDirectory()
@@ -440,6 +460,7 @@ private extension HabitStore {
 
         guard let lastCompleted = completedDates.max() else {
             habit.currentStreak = 0
+            habit.longestStreak = 0
             habit.lastCompletedDate = nil
             return
         }
@@ -626,6 +647,11 @@ private extension HabitStore {
         return backupURL
     }
 
+    func creationDate(for url: URL) -> Date {
+        let values = try? url.resourceValues(forKeys: [.creationDateKey])
+        return values?.creationDate ?? .distantPast
+    }
+
     func nextHabitSortOrder() -> Int {
         (habits.map(\.sortOrder).max() ?? -1) + 1
     }
@@ -636,6 +662,9 @@ private extension HabitStore {
         restoreHabits(from: backup.habits)
 
         guard save() else {
+            modelContext.rollback()
+            fetchUserProfile()
+            fetchHabits()
             throw HabitBackupError.saveFailed
         }
     }
@@ -914,6 +943,10 @@ extension HabitStore {
         return statisticSummary(dates: dates)
     }
 
+    func statisticSummary(dates: [Date]) -> HabitStatisticSummary {
+        aggregateStatisticSummary(dates: dates)
+    }
+
     func yearDates(containing date: Date) -> [Date] {
         dates(in: .year, containing: date)
     }
@@ -1034,7 +1067,7 @@ private extension HabitStore {
         )
     }
 
-    func statisticSummary(dates: [Date]) -> HabitStatisticSummary {
+    func aggregateStatisticSummary(dates: [Date]) -> HabitStatisticSummary {
         let calendar = AppCalendar.current
         var scheduledDayCount = 0
         var completedDayCount = 0
@@ -1052,16 +1085,21 @@ private extension HabitStore {
 
             scheduledDayCount += 1
 
-            if isComplete(on: date) {
-                completedDayCount += 1
-            }
-
+            var completedCountForDate = 0
+            var targetCountForDate = 0
             for habit in scheduledHabits where habit.goalCount > 0 {
                 let entry = habit.entries.first {
                     calendar.isDate($0.date, inSameDayAs: date)
                 }
-                totalCompletedCount += min(entry?.completedCount ?? 0, habit.goalCount)
-                totalTargetCount += habit.goalCount
+                completedCountForDate += min(entry?.completedCount ?? 0, habit.goalCount)
+                targetCountForDate += habit.goalCount
+            }
+
+            totalCompletedCount += completedCountForDate
+            totalTargetCount += targetCountForDate
+
+            if targetCountForDate > 0 && completedCountForDate >= targetCountForDate {
+                completedDayCount += 1
             }
         }
 
