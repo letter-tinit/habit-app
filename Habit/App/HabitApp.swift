@@ -7,10 +7,12 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct HabitApp: App {
     let container: ModelContainer
+    private let notificationDelegate = AppNotificationDelegate()
 
     init() {
         let schema = Schema([
@@ -26,6 +28,8 @@ struct HabitApp: App {
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
+
+        UNUserNotificationCenter.current().delegate = notificationDelegate
     }
 
     var body: some Scene {
@@ -34,5 +38,14 @@ struct HabitApp: App {
                 .modelContainer(container)
                 .environment(HabitStore(modelContext: container.mainContext))
         }
+    }
+}
+
+private final class AppNotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        [.banner, .list, .sound]
     }
 }

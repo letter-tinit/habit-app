@@ -228,6 +228,7 @@ extension HabitStore {
         try replaceCurrentData(with: backup)
         fetchUserProfile()
         fetchHabits()
+        rescheduleHabitNotifications()
     }
 }
 
@@ -249,11 +250,13 @@ extension HabitStore {
         }
     }
 
-    func addHabit(_ habit: Habit) {
+    func addHabit(_ habit: Habit, reminders: [HabitReminderConfiguration] = []) {
         habit.sortOrder = nextHabitSortOrder()
+        replaceReminders(for: habit, with: reminders)
         modelContext.insert(habit)
         if save() {
             fetchHabits()
+            HabitNotificationScheduler.rescheduleNotifications(for: habit)
         }
     }
 
@@ -297,8 +300,11 @@ extension HabitStore {
         targetDaysOfWeek: [Int],
         goalType: GoalType,
         goalCount: Int,
-        goalUnit: String
+        goalUnit: String,
+        reminders: [HabitReminderConfiguration]
     ) {
+        HabitNotificationScheduler.cancelNotifications(for: habit)
+
         habit.name = name
         habit.habitDescription = description
         habit.icon = icon
@@ -311,9 +317,13 @@ extension HabitStore {
         habit.goalCount = goalCount
         habit.goalUnit = goalUnit
 
+        replaceReminders(for: habit, with: reminders)
         updateStreaks(for: habit)
 
-        if !save() {
+        if save() {
+            fetchHabits()
+            HabitNotificationScheduler.rescheduleNotifications(for: habit)
+        } else {
             fetchHabits()
         }
     }
@@ -323,6 +333,7 @@ extension HabitStore {
         guard habit.archivedAt == nil else { return true }
 
         habit.archivedAt = Date()
+        HabitNotificationScheduler.cancelNotifications(for: habit)
 
         if save() {
             fetchHabits()
@@ -330,6 +341,7 @@ extension HabitStore {
         } else {
             habit.archivedAt = nil
             fetchHabits()
+            HabitNotificationScheduler.rescheduleNotifications(for: habit)
             return false
         }
     }
@@ -343,10 +355,12 @@ extension HabitStore {
 
         if save() {
             fetchHabits()
+            HabitNotificationScheduler.rescheduleNotifications(for: habit)
             return true
         } else {
             habit.archivedAt = archivedAt
             fetchHabits()
+            HabitNotificationScheduler.cancelNotifications(for: habit)
             return false
         }
     }
@@ -359,11 +373,13 @@ extension HabitStore {
     func deleteHabit(id: UUID) -> Bool {
         guard let habit = habit(id: id) else { return false }
         habits.removeAll { $0.id == id }
+        HabitNotificationScheduler.cancelNotifications(for: habit)
 
         modelContext.delete(habit)
 
         guard save() else {
             fetchHabits()
+            HabitNotificationScheduler.rescheduleNotifications(for: habit)
             return false
         }
 
@@ -377,11 +393,13 @@ extension HabitStore {
         let habitID = habit.id
         selectedHabit = nil
         habits.removeAll { $0.id == habitID }
+        HabitNotificationScheduler.cancelNotifications(for: habit)
 
         modelContext.delete(habit)
 
         guard save() else {
             fetchHabits()
+            HabitNotificationScheduler.rescheduleNotifications(for: habit)
             return false
         }
 
@@ -481,6 +499,28 @@ private extension HabitStore {
             habit: habit,
             calendar: calendar
         )
+    }
+
+    func replaceReminders(
+        for habit: Habit,
+        with configurations: [HabitReminderConfiguration]
+    ) {
+        for reminder in habit.reminders {
+            modelContext.delete(reminder)
+        }
+        habit.reminders.removeAll()
+
+        for configuration in configurations.sorted(by: { $0.time < $1.time }) {
+            let reminder = HabitReminder(
+                time: configuration.time,
+                daysOfWeek: configuration.daysOfWeek,
+                isEnabled: configuration.isEnabled
+            )
+            reminder.id = configuration.id
+            reminder.habit = habit
+            habit.reminders.append(reminder)
+            modelContext.insert(reminder)
+        }
     }
 
     func longestStreak(
@@ -681,6 +721,10 @@ private extension HabitStore {
     }
 
     func deleteExistingBackupData() throws {
+        for habit in try modelContext.fetch(FetchDescriptor<Habit>()) {
+            HabitNotificationScheduler.cancelNotifications(for: habit)
+        }
+
         try modelContext.fetch(FetchDescriptor<HabitEntry>()).forEach { entry in
             modelContext.delete(entry)
         }
@@ -780,6 +824,12 @@ private extension HabitStore {
             reminder.habit = habit
             habit.reminders.append(reminder)
             modelContext.insert(reminder)
+        }
+    }
+
+    func rescheduleHabitNotifications() {
+        for habit in habits {
+            HabitNotificationScheduler.rescheduleNotifications(for: habit)
         }
     }
 }

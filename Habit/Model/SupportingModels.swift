@@ -23,6 +23,32 @@ final class HabitReminder {
     }
 }
 
+struct HabitReminderConfiguration: Identifiable {
+    let id: UUID
+    var time: Date
+    var daysOfWeek: [Int]
+    var isEnabled: Bool
+
+    init(
+        id: UUID = UUID(),
+        time: Date,
+        daysOfWeek: [Int] = [],
+        isEnabled: Bool = true
+    ) {
+        self.id = id
+        self.time = time
+        self.daysOfWeek = daysOfWeek
+        self.isEnabled = isEnabled
+    }
+
+    init(_ reminder: HabitReminder) {
+        self.id = reminder.id
+        self.time = reminder.time
+        self.daysOfWeek = reminder.daysOfWeek
+        self.isEnabled = reminder.isEnabled
+    }
+}
+
 // MARK: - UserProfile
 // Singleton-style; stores app-wide settings and aggregated stats.
 

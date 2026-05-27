@@ -30,6 +30,7 @@ struct CreateHabitScreen: View {
     @State private var showSymbolPicker = false
     @State private var showStartDatePicker = false
     @State private var showEndDatePicker = false
+    @State private var reminders: [HabitReminderConfiguration]
     
     private let colorOptions = AppConstant.colorOptions
     
@@ -88,6 +89,7 @@ struct CreateHabitScreen: View {
         _goalType = State(initialValue: habit?.goalType ?? .count)
         _goalCountText = State(initialValue: String(habit?.goalCount ?? 1))
         _goalUnit = State(initialValue: habit?.goalUnit ?? "times")
+        _reminders = State(initialValue: habit?.reminders.map(HabitReminderConfiguration.init).sorted { $0.time < $1.time } ?? [])
     }
     
     var body: some View {
@@ -98,6 +100,7 @@ struct CreateHabitScreen: View {
                     scheduleSection
                     durationSection
                     goalSection
+                    reminderSection
                     styleSection
                     previewItem
                     
@@ -483,7 +486,8 @@ struct CreateHabitScreen: View {
                 targetDaysOfWeek: habitToEdit.targetDaysOfWeek,
                 goalType: habitToEdit.goalType,
                 goalCount: habitToEdit.goalCount,
-                goalUnit: habitToEdit.goalUnit
+                goalUnit: habitToEdit.goalUnit,
+                reminders: reminders
             )
         } else {
             let habit = Habit(
@@ -500,7 +504,7 @@ struct CreateHabitScreen: View {
                 goalUnit: trimmedGoalUnit
             )
             
-            habitStore.addHabit(habit)
+            habitStore.addHabit(habit, reminders: reminders)
         }
         
         dismiss()
@@ -525,6 +529,92 @@ struct CreateHabitScreen: View {
         } else {
             selectedDays.insert(weekday)
         }
+    }
+
+    private var reminderSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Reminders")
+                    .font(.headline)
+                    .fontDesign(.rounded)
+
+                Spacer()
+
+                Button {
+                    addReminder()
+                } label: {
+                    Image(systemName: "plus")
+                        .fontWeight(.bold)
+                        .frame(width: 30, height: 30)
+                }
+                .accessibilityLabel("Add reminder")
+            }
+
+            if reminders.isEmpty {
+                Text("No reminders")
+                    .font(.subheadline)
+                    .fontDesign(.rounded)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .liquidGlassSurface(cornerRadius: 12)
+            } else {
+                VStack(spacing: 10) {
+                    ForEach($reminders) { $reminder in
+                        reminderRow(reminder: $reminder)
+                    }
+                }
+            }
+
+            Text("Notifications use this habit's repeat days.")
+                .font(.footnote)
+                .fontDesign(.rounded)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func reminderRow(reminder: Binding<HabitReminderConfiguration>) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "bell")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+
+            DatePicker(
+                "Reminder time",
+                selection: reminder.time,
+                displayedComponents: .hourAndMinute
+            )
+            .labelsHidden()
+
+            Spacer(minLength: 0)
+
+            Button(role: .destructive) {
+                deleteReminder(id: reminder.wrappedValue.id)
+            } label: {
+                Image(systemName: "trash")
+                    .frame(width: 30, height: 30)
+            }
+            .accessibilityLabel("Delete reminder")
+        }
+        .padding(.horizontal, 12)
+        .frame(minHeight: 56)
+        .liquidGlassSurface(cornerRadius: 12, interactive: true)
+    }
+
+    private func addReminder() {
+        let nextTime = AppCalendar.current.date(
+            bySettingHour: 9,
+            minute: 0,
+            second: 0,
+            of: Date()
+        ) ?? Date()
+
+        reminders.append(HabitReminderConfiguration(time: nextTime))
+        reminders.sort { $0.time < $1.time }
+    }
+
+    private func deleteReminder(id: UUID) {
+        reminders.removeAll { $0.id == id }
     }
     
     private func shortWeekdayName(for weekday: Int) -> String {

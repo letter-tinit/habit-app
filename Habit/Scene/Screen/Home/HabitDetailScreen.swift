@@ -69,6 +69,8 @@ struct HabitDetailContent: View {
                     VStack(spacing: 0) {
                         detailRow(title: "Repeat", value: repeatTitle)
                         Divider().opacity(0.28)
+                        detailRow(title: "Reminders", value: reminderTitle)
+                        Divider().opacity(0.28)
                         detailRow(title: "Goal", value: goalTitle)
                         Divider().opacity(0.28)
                         detailRow(title: "Current streak", value: "\(habit.currentStreak)")
@@ -162,6 +164,20 @@ struct HabitDetailContent: View {
 
     private var goalTitle: String {
         habit.goalType == .todo ? "Complete once" : "\(habit.goalCount) \(habit.goalUnit)"
+    }
+
+    private var reminderTitle: String {
+        let enabledReminders = habit.reminders
+            .filter(\.isEnabled)
+            .sorted { $0.time < $1.time }
+
+        guard !enabledReminders.isEmpty else {
+            return "None"
+        }
+
+        return enabledReminders
+            .map { $0.time.toString(withFormat: .custom("HH:mm")) }
+            .joined(separator: ", ")
     }
 
     private func archiveHabit() {
