@@ -239,7 +239,8 @@ struct StatisticPeriodHeader: View {
                 title: "\(Int(progress * 100))%",
                 size: isCompact ? 44 : 52,
                 tintColor: Color(hex: habit.colorHex),
-                fontWeight: .bold
+                fontWeight: .bold,
+                image: isCompact ? Image(systemName: habit.icon) : nil
             )
 
             VStack(alignment: .leading, spacing: 4) {

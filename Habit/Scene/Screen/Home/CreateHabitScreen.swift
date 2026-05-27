@@ -519,7 +519,7 @@ struct CreateHabitScreen: View {
         case .weekend:
             selectedDays = [0, 6]
         case .custom:
-            selectedDays = []
+            break
         }
     }
     
@@ -528,6 +528,20 @@ struct CreateHabitScreen: View {
             selectedDays.remove(weekday)
         } else {
             selectedDays.insert(weekday)
+        }
+
+        syncFrequencyWithSelectedDays()
+    }
+
+    private func syncFrequencyWithSelectedDays() {
+        if selectedDays == Set(0...6) {
+            frequency = .daily
+        } else if selectedDays == Set(1...5) {
+            frequency = .weekday
+        } else if selectedDays == Set([0, 6]) {
+            frequency = .weekend
+        } else {
+            frequency = .custom
         }
     }
 

@@ -13,16 +13,23 @@ struct CircularWithTitleProgressView: View {
     var size: CGFloat = 24
     var tintColor: Color
     var fontWeight: Font.Weight
+    var image: Image?
     
     var body: some View {
         ZStack {
             // Background Circle
+            if let image {
+                tintColor
+                    .opacity(0.3)
+                    .clipShape(Circle())
+                image
+            }
+            
             Circle()
                 .stroke(
                     Color.gray.opacity(0.2),
                     lineWidth: 2
                 )
-            
             // Progress Circle
             Circle()
                 .trim(from: 0, to: progress)
@@ -41,6 +48,7 @@ struct CircularWithTitleProgressView: View {
                 .font(.caption2)
                 .fontWeight(fontWeight)
                 .fontDesign(.rounded)
+                .opacity(image == nil ? 1 : 0)
         }
         .frame(width: size, height: size)
     }

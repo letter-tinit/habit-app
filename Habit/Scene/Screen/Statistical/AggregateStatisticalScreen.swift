@@ -57,6 +57,7 @@ struct AggregateStatisticalScreen: View {
                 }
             }
         }
+        .shadow(color: .primary.opacity(0.3), radius: 3)
     }
 }
 

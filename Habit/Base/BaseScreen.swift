@@ -76,7 +76,7 @@ struct BaseScreen<Content: View>: View {
                     Button {
                         didTapOnTitle?()
                     } label: {
-                        Text(title)
+                        Text(title.uppercased())
                             .font(.headline)
                             .fontWeight(.semibold)
                             .fontDesign(.rounded)

@@ -27,7 +27,6 @@ struct ProfileScreen: View {
         BaseScreen($habitStore.profileTitle, backgroundType: .cyan) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    profileSection
                     settingsSection
                     backupSection
                     frequencyPreviewSection
@@ -36,6 +35,17 @@ struct ProfileScreen: View {
                 .padding(.top, 16)
                 .padding(.bottom, 28)
             }
+        }
+        .shadow(color: .primary.opacity(0.3), radius: 3)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    router.push(.editProfile)
+                } label: {
+                    avatarView
+                }
+            }
+            .sharedBackgroundVisibility(.hidden)
         }
         .onAppear {
             habitStore.fetchUserProfile()
@@ -81,43 +91,6 @@ struct ProfileScreen: View {
         }
     }
 
-    private var profileSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Profile")
-                .font(.headline)
-                .fontDesign(.rounded)
-
-            Button {
-                router.push(.editProfile)
-            } label: {
-                HStack(spacing: 14) {
-                    avatarView
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(habitStore.userProfile?.displayName ?? "You")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .fontDesign(.rounded)
-
-                        Text("Edit profile")
-                            .font(.subheadline)
-                            .fontDesign(.rounded)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .buttonStyle(.plain)
-            .padding()
-            .liquidGlassSurface(cornerRadius: 16, interactive: true)
-        }
-    }
-
     private var importConfirmationMessage: String {
         guard let pendingImportSummary else {
             return "This will replace your current profile, habits, entries, and reminders with the selected backup."
@@ -158,7 +131,7 @@ struct ProfileScreen: View {
                     .padding(10)
             }
         }
-        .frame(width: 76, height: 76)
+        .frame(width: 46, height: 46)
         .clipShape(Circle())
         .overlay {
             Circle()

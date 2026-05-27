@@ -45,6 +45,7 @@ struct StatisticalScreen: View {
                 }
             }
         }
+        .shadow(color: .primary.opacity(0.3), radius: 3)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
