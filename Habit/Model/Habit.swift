@@ -15,6 +15,8 @@ final class Habit: Hashable {
     var sortOrder: Int = 0
 
     // Scheduling
+    var startDate: Date?                    // nil falls back to createdAt for older data
+    var endDate: Date?                      // nil = forever
     var frequency: HabitFrequency          // daily / weekly / custom
     var targetDaysOfWeek: [Int]            // 0=Sun … 6=Sat (used when frequency == .weekly/.custom)
     var reminderTime: Date?                // optional daily reminder
@@ -42,6 +44,8 @@ final class Habit: Hashable {
         description: String = "",
         icon: String = "star.fill",
         colorHex: String = "#4ECDC4",
+        startDate: Date? = nil,
+        endDate: Date? = nil,
         frequency: HabitFrequency = .daily,
         targetDaysOfWeek: [Int] = [],
         goalType: GoalType = .todo,
@@ -55,6 +59,8 @@ final class Habit: Hashable {
         self.colorHex = colorHex
         self.createdAt = Date()
         self.sortOrder = Int(Date().timeIntervalSince1970)
+        self.startDate = startDate
+        self.endDate = endDate
         self.frequency = frequency
         self.targetDaysOfWeek = targetDaysOfWeek
         self.goalType = goalType
@@ -84,6 +90,10 @@ enum GoalType: String, Codable {
 extension Habit {
     var isArchived: Bool {
         archivedAt != nil
+    }
+
+    var effectiveStartDate: Date {
+        startDate ?? createdAt
     }
 
     func entry(for date: Date) -> HabitEntry? {

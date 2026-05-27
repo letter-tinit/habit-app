@@ -291,6 +291,8 @@ extension HabitStore {
         description: String,
         icon: String,
         colorHex: String,
+        startDate: Date,
+        endDate: Date?,
         frequency: HabitFrequency,
         targetDaysOfWeek: [Int],
         goalType: GoalType,
@@ -301,6 +303,8 @@ extension HabitStore {
         habit.habitDescription = description
         habit.icon = icon
         habit.colorHex = colorHex
+        habit.startDate = startDate
+        habit.endDate = endDate
         habit.frequency = frequency
         habit.targetDaysOfWeek = targetDaysOfWeek
         habit.goalType = goalType
@@ -538,7 +542,7 @@ private extension HabitStore {
         calendar: Calendar
     ) -> Date? {
         var date = calendar.startOfDay(for: date)
-        let createdDay = calendar.startOfDay(for: habit.createdAt)
+        let startDay = calendar.startOfDay(for: habit.effectiveStartDate)
 
         repeat {
             guard let previousDay = calendar.date(byAdding: .day, value: -1, to: date) else {
@@ -547,7 +551,7 @@ private extension HabitStore {
 
             date = previousDay
 
-            if date < createdDay {
+            if date < startDay {
                 return nil
             }
         } while !shouldSchedule(habit, on: date, calendar: calendar)
@@ -565,10 +569,17 @@ private extension HabitStore {
         calendar: Calendar
     ) -> Bool {
         let day = calendar.startOfDay(for: date)
-        let createdDay = calendar.startOfDay(for: habit.createdAt)
+        let startDay = calendar.startOfDay(for: habit.effectiveStartDate)
 
-        guard day >= createdDay else {
+        guard day >= startDay else {
             return false
+        }
+
+        if let endDate = habit.endDate {
+            let endDay = calendar.startOfDay(for: endDate)
+            guard day <= endDay else {
+                return false
+            }
         }
 
         if let archivedAt = habit.archivedAt {
@@ -714,6 +725,8 @@ private extension HabitStore {
                 description: backup.habitDescription,
                 icon: backup.icon,
                 colorHex: backup.colorHex,
+                startDate: backup.startDate,
+                endDate: backup.endDate,
                 frequency: backup.frequency,
                 targetDaysOfWeek: backup.targetDaysOfWeek,
                 goalType: backup.goalType,
@@ -1073,10 +1086,12 @@ private extension HabitStore {
         var completedDayCount = 0
         var totalCompletedCount = 0
         var totalTargetCount = 0
+        var totalProgressRatio = 0.0
+        var scheduledHabitCount = 0
 
         for date in dates {
             let scheduledHabits = habits.filter {
-                shouldSchedule($0, on: date, calendar: calendar)
+                shouldSchedule($0, on: date, calendar: calendar) && $0.goalCount > 0
             }
 
             guard !scheduledHabits.isEmpty else {
@@ -1085,27 +1100,33 @@ private extension HabitStore {
 
             scheduledDayCount += 1
 
-            var completedCountForDate = 0
-            var targetCountForDate = 0
-            for habit in scheduledHabits where habit.goalCount > 0 {
+            var isDateComplete = true
+            for habit in scheduledHabits {
                 let entry = habit.entries.first {
                     calendar.isDate($0.date, inSameDayAs: date)
                 }
-                completedCountForDate += min(entry?.completedCount ?? 0, habit.goalCount)
-                targetCountForDate += habit.goalCount
+                let completedCount = min(entry?.completedCount ?? 0, habit.goalCount)
+                let targetCount = habit.goalCount
+                let progressRatio = min(Double(completedCount) / Double(targetCount), 1)
+
+                totalCompletedCount += completedCount
+                totalTargetCount += targetCount
+                totalProgressRatio += progressRatio
+                scheduledHabitCount += 1
+
+                if progressRatio < 1 {
+                    isDateComplete = false
+                }
             }
 
-            totalCompletedCount += completedCountForDate
-            totalTargetCount += targetCountForDate
-
-            if targetCountForDate > 0 && completedCountForDate >= targetCountForDate {
+            if isDateComplete {
                 completedDayCount += 1
             }
         }
 
-        let progress = totalTargetCount == 0
+        let progress = scheduledHabitCount == 0
         ? 0
-        : min(Double(totalCompletedCount) / Double(totalTargetCount), 1)
+        : totalProgressRatio / Double(scheduledHabitCount)
 
         return HabitStatisticSummary(
             progress: progress,

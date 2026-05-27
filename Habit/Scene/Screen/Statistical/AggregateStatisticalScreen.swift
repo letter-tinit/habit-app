@@ -95,7 +95,7 @@ private struct AggregateSummaryCard: View {
             VStack(spacing: 0) {
                 statisticRow(title: "Completed days", value: "\(summary.completedDays)/\(summary.scheduledDays)")
                 Divider().opacity(0.35)
-                statisticRow(title: "Total progress", value: "\(summary.totalCompletedCount)/\(summary.totalTargetCount)")
+                statisticRow(title: "Completed count", value: "\(summary.totalCompletedCount)/\(summary.totalTargetCount)")
             }
         }
         .padding()

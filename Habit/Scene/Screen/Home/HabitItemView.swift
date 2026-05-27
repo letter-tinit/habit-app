@@ -195,7 +195,7 @@ struct HabitItemView: View {
             }
             .presentationBackground(.ultraThinMaterial)
             .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
+            .presentationDragIndicator(.hidden)
         }
         .onTapGesture {
             Haptic.selection()

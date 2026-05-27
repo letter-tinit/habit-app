@@ -11,46 +11,68 @@ import SwiftData
 struct CreateHabitScreen: View {
     @Environment(HabitStore.self) private var habitStore
     @Environment(\.dismiss) private var dismiss
-
+    
     private let habitToEdit: Habit?
-
+    
     @State private var screenTitle: String
     @State private var name: String
     @State private var icon: String
     @State private var habitDescription: String
     @State private var colorHex: String
+    @State private var startDate: Date
+    @State private var hasEndDate: Bool
+    @State private var endDate: Date
     @State private var frequency: HabitFrequency
     @State private var selectedDays: Set<Int>
     @State private var goalType: GoalType
     @State private var goalCountText: String
     @State private var goalUnit: String
     @State private var showSymbolPicker = false
-
+    @State private var showStartDatePicker = false
+    @State private var showEndDatePicker = false
+    
     private let colorOptions = AppConstant.colorOptions
-
+    
     private var trimmedName: String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-
+    
     private var trimmedGoalUnit: String {
         goalUnit.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-
+    
     private var goalCount: Int {
         goalType == .todo ? 1 : Int(goalCountText) ?? 0
     }
-
+    
     private var isEditing: Bool {
         habitToEdit != nil
     }
-
+    
+    private var normalizedStartDate: Date {
+        AppCalendar.current.startOfDay(for: startDate)
+    }
+    
+    private var normalizedEndDate: Date {
+        AppCalendar.current.startOfDay(for: endDate)
+    }
+    
+    private var startDateTitle: String {
+        startDate.toString(withFormat: .custom("MMM d, yyyy"))
+    }
+    
+    private var endDateTitle: String {
+        hasEndDate ? endDate.toString(withFormat: .custom("MMM d, yyyy")) : "No End"
+    }
+    
     private var canSave: Bool {
         !trimmedName.isEmpty &&
         goalCount > 0 &&
         !trimmedGoalUnit.isEmpty &&
+        (!hasEndDate || normalizedEndDate >= normalizedStartDate) &&
         (frequency != .custom || !selectedDays.isEmpty)
     }
-
+    
     init(habit: Habit? = nil) {
         habitToEdit = habit
         _screenTitle = State(initialValue: habit == nil ? "New Habit" : "Edit Habit")
@@ -58,23 +80,27 @@ struct CreateHabitScreen: View {
         _icon = State(initialValue: habit?.icon ?? "star.fill")
         _habitDescription = State(initialValue: habit?.habitDescription ?? "")
         _colorHex = State(initialValue: habit?.colorHex ?? AppConstant.defaultColor)
+        _startDate = State(initialValue: habit?.effectiveStartDate ?? Date())
+        _hasEndDate = State(initialValue: habit?.endDate != nil)
+        _endDate = State(initialValue: habit?.endDate ?? Date())
         _frequency = State(initialValue: habit?.frequency ?? .daily)
         _selectedDays = State(initialValue: Set(habit?.targetDaysOfWeek ?? Array(0...6)))
         _goalType = State(initialValue: habit?.goalType ?? .count)
         _goalCountText = State(initialValue: String(habit?.goalCount ?? 1))
         _goalUnit = State(initialValue: habit?.goalUnit ?? "times")
     }
-
+    
     var body: some View {
         BaseScreen($screenTitle) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     identitySection
                     scheduleSection
+                    durationSection
                     goalSection
                     styleSection
                     previewItem
-
+                    
                     Spacer()
                 }
                 .padding(.horizontal)
@@ -101,19 +127,44 @@ struct CreateHabitScreen: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showStartDatePicker) {
+            CalendarPickerSheet(
+                title: "Start Date",
+                initialDate: startDate
+            ) { selectedDate in
+                startDate = selectedDate
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.hidden)
+        }
+        .sheet(isPresented: $showEndDatePicker) {
+            CalendarPickerSheet(
+                title: "End Date",
+                initialDate: hasEndDate ? endDate : max(startDate, Date()),
+                minimumDate: startDate,
+                clearTitle: hasEndDate ? "Reset" : nil
+            ) { selectedDate in
+                endDate = selectedDate
+                hasEndDate = true
+            } onClear: {
+                hasEndDate = false
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.hidden)
+        }
     }
-
+    
     private var identitySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Identity")
                 .font(.headline)
                 .fontDesign(.rounded)
-
+            
             TextField("Habit name", text: $name)
                 .textInputAutocapitalization(.words)
                 .padding()
                 .liquidGlassSurface(cornerRadius: 12, interactive: true)
-
+            
             HStack(spacing: 12) {
                 Button {
                     baseAnimation {
@@ -128,7 +179,7 @@ struct CreateHabitScreen: View {
                         .foregroundStyle(Color.init(hex: colorHex))
                 }
                 .liquidGlassSurface(cornerRadius: 12, interactive: true)
-
+                
                 TextField("Description", text: $habitDescription)
                     .frame(height: 60)
                     .padding(.horizontal)
@@ -136,13 +187,13 @@ struct CreateHabitScreen: View {
             }
         }
     }
-
+    
     private var scheduleSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Repeat")
                 .font(.headline)
                 .fontDesign(.rounded)
-
+            
             Picker("Repeat", selection: $frequency) {
                 Text("Daily").tag(HabitFrequency.daily)
                 Text("Weekday").tag(HabitFrequency.weekday)
@@ -153,8 +204,13 @@ struct CreateHabitScreen: View {
             .onChange(of: frequency) { _, newValue in
                 applyDefaultDays(for: newValue)
             }
+            .onChange(of: startDate) { _, newValue in
+                if hasEndDate && normalizedEndDate < AppCalendar.current.startOfDay(for: newValue) {
+                    endDate = newValue
+                }
+            }
             .disabled(isEditing)
-
+            
             HStack(spacing: 8) {
                 ForEach(habitStore.orderedWeekdays, id: \.self) { weekday in
                     Button {
@@ -181,7 +237,7 @@ struct CreateHabitScreen: View {
                     .disabled(isEditing)
                 }
             }
-
+            
             if isEditing {
                 Text("Repeat settings are locked to keep existing statistics stable.")
                     .font(.footnote)
@@ -190,13 +246,69 @@ struct CreateHabitScreen: View {
             }
         }
     }
-
+    
+    private var durationSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Duration")
+                .font(.headline)
+                .fontDesign(.rounded)
+            
+            HStack(spacing: 12) {
+                dateButton(title: "Start Date", value: startDateTitle) {
+                    showStartDatePicker = true
+                }
+                
+                dateButton(title: "End Date", value: endDateTitle) {
+                    if !hasEndDate {
+                        endDate = max(startDate, Date())
+                    }
+                    
+                    showEndDatePicker = true
+                }
+            }
+        }
+    }
+    
+    private func dateButton(
+        title: String,
+        value: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 10) {
+                Image(systemName: "calendar")
+                    .font(.headline)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.caption)
+                        .fontDesign(.rounded)
+                        .foregroundStyle(.secondary)
+                    
+                    Text(value)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .padding(.horizontal, 12)
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .liquidGlassSurface(cornerRadius: 12, interactive: true)
+    }
+    
     private var goalSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Goal")
                 .font(.headline)
                 .fontDesign(.rounded)
-
+            
             Picker("Goal type", selection: $goalType) {
                 Text("Count").tag(GoalType.count)
                 Text("Todo").tag(GoalType.todo)
@@ -209,7 +321,7 @@ struct CreateHabitScreen: View {
                 }
             }
             .disabled(isEditing)
-
+            
             if goalType == .count {
                 HStack(spacing: 12) {
                     TextField("Target", text: $goalCountText)
@@ -217,7 +329,7 @@ struct CreateHabitScreen: View {
                         .disabled(goalType == .todo || isEditing)
                         .padding()
                         .liquidGlassSurface(cornerRadius: 12, interactive: true)
-
+                    
                     TextField("Unit", text: $goalUnit)
                         .disabled(isEditing)
                         .padding()
@@ -225,7 +337,7 @@ struct CreateHabitScreen: View {
                 }
                 .transition(.opacity)
             }
-
+            
             if isEditing {
                 Text("Goal settings are locked to keep completion history stable.")
                     .font(.footnote)
@@ -234,13 +346,13 @@ struct CreateHabitScreen: View {
             }
         }
     }
-
+    
     private var styleSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Style")
                 .font(.headline)
                 .fontDesign(.rounded)
-
+            
             ScrollView(.horizontal) {
                 HStack(spacing: 10) {
                     ForEach(colorOptions, id: \.self) { hex in
@@ -263,95 +375,101 @@ struct CreateHabitScreen: View {
             .scrollIndicators(.hidden)
         }
     }
-
+    
     private var previewItem: some View {
         let emptyHabit = Habit(
             name: trimmedName,
             description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
             icon: icon,
             colorHex: colorHex,
+            startDate: startDate,
+            endDate: hasEndDate ? endDate : nil,
             frequency: frequency,
             targetDaysOfWeek: Array(selectedDays).sorted(),
             goalType: goalType,
             goalCount: goalCount,
-            goalUnit: trimmedGoalUnit,
+            goalUnit: trimmedGoalUnit
         )
-
+        
         let entry = HabitEntry(
             date: Date(),
             completedCount: 0,
             note: "Read 20 pages and practiced SwiftUI"
         )
-
+        
         emptyHabit.entries.append(entry)
-
+        
         let halfHabit = Habit(
             name: trimmedName,
             description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
             icon: icon,
             colorHex: colorHex,
+            startDate: startDate,
+            endDate: hasEndDate ? endDate : nil,
             frequency: frequency,
             targetDaysOfWeek: Array(selectedDays).sorted(),
             goalType: goalType,
             goalCount: goalCount,
-            goalUnit: trimmedGoalUnit,
+            goalUnit: trimmedGoalUnit
         )
-
+        
         let halfEntry = HabitEntry(
             date: Date(),
             completedCount: goalCount / 2,
             note: "Read 20 pages and practiced SwiftUI"
         )
-
+        
         halfHabit.entries.append(halfEntry)
-
+        
         let doneHabit = Habit(
             name: trimmedName,
             description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
             icon: icon,
             colorHex: colorHex,
+            startDate: startDate,
+            endDate: hasEndDate ? endDate : nil,
             frequency: frequency,
             targetDaysOfWeek: Array(selectedDays).sorted(),
             goalType: goalType,
             goalCount: goalCount,
-            goalUnit: trimmedGoalUnit,
+            goalUnit: trimmedGoalUnit
         )
-
+        
         let doneEntry = HabitEntry(
             date: Date(),
             completedCount: goalCount,
             note: "Read 20 pages and practiced SwiftUI"
         )
-
+        
         doneHabit.entries.append(doneEntry)
-
+        
         return VStack(alignment: .leading, spacing: 12) {
             Text("Preview")
                 .font(.headline)
                 .fontDesign(.rounded)
-
+            
             Text("Untrack")
                 .font(.subheadline)
                 .fontDesign(.rounded)
             HabitItemView(habit: emptyHabit, selectedDate: Date())
-
+            
             if goalType == .count && goalCount > 1 {
                 Text("In Progress")
                     .font(.subheadline)
                     .fontDesign(.rounded)
                 HabitItemView(habit: halfHabit, selectedDate: Date())
             }
-
+            
             Text("Done")
                 .font(.subheadline)
                 .fontDesign(.rounded)
             HabitItemView(habit: doneHabit, selectedDate: Date())
         }
     }
-
+    
     private func saveHabit() {
         guard canSave else { return }
-
+        
         if let habitToEdit {
             habitStore.updateHabit(
                 habitToEdit,
@@ -359,6 +477,8 @@ struct CreateHabitScreen: View {
                 description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
                 icon: icon,
                 colorHex: colorHex,
+                startDate: startDate,
+                endDate: hasEndDate ? endDate : nil,
                 frequency: habitToEdit.frequency,
                 targetDaysOfWeek: habitToEdit.targetDaysOfWeek,
                 goalType: habitToEdit.goalType,
@@ -371,19 +491,21 @@ struct CreateHabitScreen: View {
                 description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
                 icon: icon,
                 colorHex: colorHex,
+                startDate: startDate,
+                endDate: hasEndDate ? endDate : nil,
                 frequency: frequency,
                 targetDaysOfWeek: Array(selectedDays).sorted(),
                 goalType: goalType,
                 goalCount: goalCount,
                 goalUnit: trimmedGoalUnit
             )
-
+            
             habitStore.addHabit(habit)
         }
-
+        
         dismiss()
     }
-
+    
     private func applyDefaultDays(for frequency: HabitFrequency) {
         switch frequency {
         case .daily:
@@ -396,7 +518,7 @@ struct CreateHabitScreen: View {
             selectedDays = []
         }
     }
-
+    
     private func toggleWeekday(_ weekday: Int) {
         if selectedDays.contains(weekday) {
             selectedDays.remove(weekday)
@@ -404,7 +526,7 @@ struct CreateHabitScreen: View {
             selectedDays.insert(weekday)
         }
     }
-
+    
     private func shortWeekdayName(for weekday: Int) -> String {
         switch weekday {
         case 0: "Sun"
@@ -422,17 +544,17 @@ struct CreateHabitScreen: View {
 private struct SymbolPickerSheet: View {
     @Binding var selectedSymbol: String
     @Environment(\.dismiss) private var dismiss
-
+    
     private let columns = [
         GridItem(.adaptive(minimum: 56), spacing: 12)
     ]
-
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Choose Symbol")
                 .font(.headline)
                 .fontDesign(.rounded)
-
+            
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(AppConstant.habitSymbolOptions, id: \.self) { symbol in
@@ -460,13 +582,91 @@ private struct SymbolPickerSheet: View {
     }
 }
 
+private struct CalendarPickerSheet: View {
+    let title: String
+    var minimumDate: Date?
+    var clearTitle: String?
+    let onDone: (Date) -> Void
+    var onClear: (() -> Void)?
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedDate: Date
+    
+    init(
+        title: String,
+        initialDate: Date,
+        minimumDate: Date? = nil,
+        clearTitle: String? = nil,
+        onDone: @escaping (Date) -> Void,
+        onClear: (() -> Void)? = nil
+    ) {
+        self.title = title
+        self.minimumDate = minimumDate
+        self.clearTitle = clearTitle
+        self.onDone = onDone
+        self.onClear = onClear
+        _selectedDate = State(initialValue: initialDate)
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let minimumDate {
+                    DatePicker(
+                        title,
+                        selection: $selectedDate,
+                        in: minimumDate...,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                } else {
+                    DatePicker(title, selection: $selectedDate, displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                }
+            }
+            .ignoresSafeArea()
+            .offset(y: -30)
+            .padding(.horizontal)
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                
+                if let clearTitle, let onClear {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(role: .destructive) {
+                            onClear()
+                            dismiss()
+                        } label: {
+                            Text(clearTitle)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        onDone(selectedDate)
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                }
+            }
+        }
+    }
+}
+
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(
         for: Habit.self, HabitEntry.self, HabitReminder.self, UserProfile.self,
         configurations: config
     )
-
+    
     NavigationStack {
         CreateHabitScreen()
             .modelContainer(container)

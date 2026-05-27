@@ -62,6 +62,7 @@ struct EditProfileScreen: View {
                 avatarData = adjustedData
             }
             .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.hidden)
         }
         .onAppear {
             displayName = habitStore.userProfile?.displayName ?? "You"

@@ -67,6 +67,16 @@ extension HabitBackupItem {
             throw HabitBackupError.invalidData("The habit \"\(name)\" has invalid scheduled days.")
         }
 
+        if let endDate {
+            let calendar = AppCalendar.current
+            let startDay = calendar.startOfDay(for: effectiveStartDate)
+            let endDay = calendar.startOfDay(for: endDate)
+
+            guard endDay >= startDay else {
+                throw HabitBackupError.invalidData("The habit \"\(name)\" ends before it starts.")
+            }
+        }
+
         let entryIDs = entries.map(\.id)
         guard Set(entryIDs).count == entryIDs.count else {
             throw HabitBackupError.invalidData("The habit \"\(name)\" contains duplicate entry IDs.")
@@ -146,6 +156,8 @@ struct HabitBackupItem: Codable {
     var createdAt: Date
     var archivedAt: Date?
     var sortOrder: Int
+    var startDate: Date?
+    var endDate: Date?
     var frequency: HabitFrequency
     var targetDaysOfWeek: [Int]
     var reminderTime: Date?
@@ -167,6 +179,8 @@ struct HabitBackupItem: Codable {
         createdAt = habit.createdAt
         archivedAt = habit.archivedAt
         sortOrder = habit.sortOrder
+        startDate = habit.effectiveStartDate
+        endDate = habit.endDate
         frequency = habit.frequency
         targetDaysOfWeek = habit.targetDaysOfWeek
         reminderTime = habit.reminderTime
@@ -189,6 +203,8 @@ struct HabitBackupItem: Codable {
         case createdAt
         case archivedAt
         case sortOrder
+        case startDate
+        case endDate
         case frequency
         case targetDaysOfWeek
         case reminderTime
@@ -213,6 +229,8 @@ struct HabitBackupItem: Codable {
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         archivedAt = try container.decodeIfPresent(Date.self, forKey: .archivedAt)
         sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
+        startDate = try container.decodeIfPresent(Date.self, forKey: .startDate)
+        endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
         frequency = try container.decode(HabitFrequency.self, forKey: .frequency)
         targetDaysOfWeek = try container.decode([Int].self, forKey: .targetDaysOfWeek)
         reminderTime = try container.decodeIfPresent(Date.self, forKey: .reminderTime)
@@ -224,6 +242,10 @@ struct HabitBackupItem: Codable {
         lastCompletedDate = try container.decodeIfPresent(Date.self, forKey: .lastCompletedDate)
         entries = try container.decode([HabitEntryBackupItem].self, forKey: .entries)
         reminders = try container.decode([HabitReminderBackupItem].self, forKey: .reminders)
+    }
+
+    var effectiveStartDate: Date {
+        startDate ?? createdAt
     }
 }
 
