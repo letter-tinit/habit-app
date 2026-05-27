@@ -12,6 +12,7 @@ import UserNotifications
 @main
 struct HabitApp: App {
     let container: ModelContainer
+    @State private var habitStore: HabitStore
     private let notificationDelegate = AppNotificationDelegate()
 
     init() {
@@ -28,6 +29,7 @@ struct HabitApp: App {
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
+        _habitStore = State(initialValue: HabitStore(modelContext: container.mainContext))
 
         UNUserNotificationCenter.current().delegate = notificationDelegate
     }
@@ -36,7 +38,19 @@ struct HabitApp: App {
         WindowGroup {
             MainTabScreen()
                 .modelContainer(container)
-                .environment(HabitStore(modelContext: container.mainContext))
+                .environment(habitStore)
+                .preferredColorScheme(preferredColorScheme)
+        }
+    }
+
+    private var preferredColorScheme: ColorScheme? {
+        switch habitStore.colorScheme {
+        case .system:
+            nil
+        case .light:
+            .light
+        case .dark:
+            .dark
         }
     }
 }

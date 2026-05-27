@@ -45,6 +45,10 @@ final class HabitStore {
         userProfile?.weekStartsOnMonday ?? true
     }
 
+    var colorScheme: AppColorScheme {
+        userProfile?.colorScheme ?? .system
+    }
+
     var orderedWeekdays: [Int] {
         weekStartsOnMonday
         ? [1, 2, 3, 4, 5, 6, 0]
@@ -144,6 +148,15 @@ extension HabitStore {
         }
 
         userProfile?.usesSimplifiedStatisticsMode = enabled
+        _ = save()
+    }
+
+    func updateColorScheme(_ colorScheme: AppColorScheme) {
+        if userProfile == nil {
+            fetchUserProfile()
+        }
+
+        userProfile?.colorScheme = colorScheme
         _ = save()
     }
 
@@ -749,6 +762,7 @@ private extension HabitStore {
             profile.weekStartsOnMonday = backup.weekStartsOnMonday
             profile.usesSimplifiedStatisticsMode = backup.usesSimplifiedStatisticsMode
             profile.defaultReminderTime = backup.defaultReminderTime
+            profile.colorScheme = backup.colorScheme
             profile.themeColorHex = backup.themeColorHex
             profile.totalCompletions = backup.totalCompletions
             profile.totalHabitsCreated = backup.totalHabitsCreated

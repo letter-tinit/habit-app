@@ -146,12 +146,33 @@ struct ProfileScreen: View {
                 .font(.headline)
                 .fontDesign(.rounded)
 
-            Toggle("Start week on Monday", isOn: Binding(
-                get: { habitStore.weekStartsOnMonday },
-                set: { habitStore.updateWeekStartsOnMonday($0) }
-            ))
-            .font(.body)
-            .fontDesign(.rounded)
+            VStack(spacing: 14) {
+                Toggle("Start week on Monday", isOn: Binding(
+                    get: { habitStore.weekStartsOnMonday },
+                    set: { habitStore.updateWeekStartsOnMonday($0) }
+                ))
+                .font(.body)
+                .fontDesign(.rounded)
+
+                Divider().opacity(0.28)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Appearance")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .fontDesign(.rounded)
+
+                    Picker("Appearance", selection: Binding(
+                        get: { habitStore.colorScheme },
+                        set: { habitStore.updateColorScheme($0) }
+                    )) {
+                        ForEach(AppColorScheme.allCases) { colorScheme in
+                            Text(colorScheme.title).tag(colorScheme)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
             .padding()
             .liquidGlassSurface(cornerRadius: 16, interactive: true)
         }

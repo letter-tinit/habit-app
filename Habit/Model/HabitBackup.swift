@@ -125,6 +125,7 @@ struct UserProfileBackup: Codable {
     var weekStartsOnMonday: Bool
     var usesSimplifiedStatisticsMode: Bool
     var defaultReminderTime: Date?
+    var colorScheme: AppColorScheme
     var themeColorHex: String
     var totalCompletions: Int
     var totalHabitsCreated: Int
@@ -139,11 +140,45 @@ struct UserProfileBackup: Codable {
         weekStartsOnMonday = profile.weekStartsOnMonday
         usesSimplifiedStatisticsMode = profile.usesSimplifiedStatisticsMode
         defaultReminderTime = profile.defaultReminderTime
+        colorScheme = profile.colorScheme
         themeColorHex = profile.themeColorHex
         totalCompletions = profile.totalCompletions
         totalHabitsCreated = profile.totalHabitsCreated
         longestOverallStreak = profile.longestOverallStreak
         joinedAt = profile.joinedAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case displayName
+        case avatarOriginalData
+        case avatarData
+        case weekStartsOnMonday
+        case usesSimplifiedStatisticsMode
+        case defaultReminderTime
+        case colorScheme
+        case themeColorHex
+        case totalCompletions
+        case totalHabitsCreated
+        case longestOverallStreak
+        case joinedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        displayName = try container.decode(String.self, forKey: .displayName)
+        avatarOriginalData = try container.decodeIfPresent(Data.self, forKey: .avatarOriginalData)
+        avatarData = try container.decodeIfPresent(Data.self, forKey: .avatarData)
+        weekStartsOnMonday = try container.decode(Bool.self, forKey: .weekStartsOnMonday)
+        usesSimplifiedStatisticsMode = try container.decode(Bool.self, forKey: .usesSimplifiedStatisticsMode)
+        defaultReminderTime = try container.decodeIfPresent(Date.self, forKey: .defaultReminderTime)
+        colorScheme = try container.decodeIfPresent(AppColorScheme.self, forKey: .colorScheme) ?? .system
+        themeColorHex = try container.decode(String.self, forKey: .themeColorHex)
+        totalCompletions = try container.decode(Int.self, forKey: .totalCompletions)
+        totalHabitsCreated = try container.decode(Int.self, forKey: .totalHabitsCreated)
+        longestOverallStreak = try container.decode(Int.self, forKey: .longestOverallStreak)
+        joinedAt = try container.decode(Date.self, forKey: .joinedAt)
     }
 }
 
