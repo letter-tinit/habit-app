@@ -89,6 +89,9 @@ enum AppConstant {
         // Suppliment
         "heart.text.clipboard",
         "sparkle.text.clipboard",
-        "guitars.fill"
+        "guitars.fill",
+        
+        // Resource
+        "ic_obsidian"
     ]
 }

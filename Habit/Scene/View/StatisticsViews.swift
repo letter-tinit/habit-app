@@ -65,7 +65,7 @@ struct StatisticsTableHeader: View {
                 Button {
                     changePeriod(by: -1)
                 } label: {
-                    Image(systemName: "chevron.left")
+                    Image(module: "chevron.left")
                         .font(.caption.weight(.bold))
                         .frame(width: 44, height: 44)
                         .contentShape(.rect)
@@ -81,7 +81,7 @@ struct StatisticsTableHeader: View {
                 Button {
                     changePeriod(by: 1)
                 } label: {
-                    Image(systemName: "chevron.right")
+                    Image(module: "chevron.right")
                         .font(.caption.weight(.bold))
                         .frame(width: 44, height: 44)
                         .contentShape(.rect)
@@ -161,7 +161,7 @@ struct HabitNameBlock: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            Image(systemName: habit.icon)
+            Image(module: habit.icon)
                 .font(.title3)
                 .frame(width: 42, height: 42)
                 .background(Color(hex: habit.colorHex).opacity(0.30))
@@ -240,7 +240,7 @@ struct StatisticPeriodHeader: View {
                 size: isCompact ? 44 : 52,
                 tintColor: Color(hex: habit.colorHex),
                 fontWeight: .bold,
-                image: isCompact ? Image(systemName: habit.icon) : nil
+                image: isCompact ? Image(module: habit.icon) : nil
             )
 
             VStack(alignment: .leading, spacing: 4) {
@@ -417,7 +417,7 @@ struct WeeklyStatisticsView: View {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .fill(Color.primary.opacity(0.025))
                         .overlay {
-                            Image(systemName: "circle.fill")
+                            Image(module: "circle.fill")
                                 .font(.system(size: 10))
                                 .fontDesign(.rounded)
                                 .fontWeight(.black)
@@ -496,7 +496,7 @@ struct MonthlyStatisticsView: View {
                                 } else {
                                     Color.primary.opacity(0.025)
                                         .overlay {
-                                            Image(systemName: "circle.fill")
+                                            Image(module: "circle.fill")
                                                 .font(.system(size: 10))
                                                 .fontDesign(.rounded)
                                                 .fontWeight(.black)
@@ -648,7 +648,7 @@ struct YearlyStatisticsView: View {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color.primary.opacity(0.025))
                     .overlay {
-                        Image(systemName: "circle.fill")
+                        Image(module: "circle.fill")
                             .font(.system(size: 2))
                             .fontDesign(.rounded)
                             .fontWeight(.regular)

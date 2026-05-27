@@ -74,7 +74,7 @@ struct HabitItemView: View {
             
             // MARK: - HABIT INFOR
             HStack(alignment: .center) {
-                Image(systemName: icon)
+                Image(module: icon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 25, height: 25)
@@ -127,12 +127,12 @@ struct HabitItemView: View {
                                 .fontWeight(.regular)
                                 .foregroundStyle(.primary)
                             
-                            Image(systemName: "flame.fill")
+                            Image(module: "flame.fill")
                                 .foregroundStyle(.orange)
                         }
                         .font(.caption2)
                         
-                        Image(systemName: "checkmark.seal.fill")
+                        Image(module: "checkmark.seal.fill")
                             .font(.title3)
                             .foregroundStyle(.green)
                     }
@@ -153,7 +153,7 @@ struct HabitItemView: View {
                             }
                         }
                     } label: {
-                        Image(systemName: goalType == .todo ? "checkmark" : "plus")
+                        Image(module: goalType == .todo ? "checkmark" : "plus")
                             .fontWeight(.bold)
                             .fontDesign(.rounded)
                     }

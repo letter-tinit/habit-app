@@ -174,7 +174,7 @@ struct CreateHabitScreen: View {
                         showSymbolPicker = true
                     }
                 } label: {
-                    Image(systemName: icon)
+                    Image(module: icon)
                         .resizable()
                         .padding()
                         .aspectRatio(contentMode: .fit)
@@ -279,7 +279,7 @@ struct CreateHabitScreen: View {
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                Image(systemName: "calendar")
+                Image(module: "calendar")
                     .font(.headline)
                 
                 VStack(alignment: .leading, spacing: 4) {
@@ -557,7 +557,7 @@ struct CreateHabitScreen: View {
                 Button {
                     addReminder()
                 } label: {
-                    Image(systemName: "plus")
+                    Image(module: "plus")
                         .fontWeight(.bold)
                         .frame(width: 30, height: 30)
                 }
@@ -589,7 +589,7 @@ struct CreateHabitScreen: View {
 
     private func reminderRow(reminder: Binding<HabitReminderConfiguration>) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: "bell")
+            Image(module: "bell")
                 .font(.headline)
                 .foregroundStyle(.secondary)
 
@@ -605,7 +605,7 @@ struct CreateHabitScreen: View {
             Button(role: .destructive) {
                 deleteReminder(id: reminder.wrappedValue.id)
             } label: {
-                Image(systemName: "trash")
+                Image(module: "trash")
                     .frame(width: 30, height: 30)
             }
             .accessibilityLabel("Delete reminder")
@@ -666,7 +666,7 @@ private struct SymbolPickerSheet: View {
                             selectedSymbol = symbol
                             dismiss()
                         } label: {
-                            Image(systemName: symbol)
+                            Image(module: symbol)
                                 .font(.title3)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 52)

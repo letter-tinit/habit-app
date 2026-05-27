@@ -66,7 +66,7 @@ struct MainTabScreen: View {
                     }
                 }
             } label: {
-                Image(systemName: AppTab.home.symbolImage)
+                Image(module: AppTab.home.symbolImage)
             }
             
             Tab(value: AppTab.overview) {
@@ -74,7 +74,7 @@ struct MainTabScreen: View {
                     AggregateStatisticalScreen()
                 } destination: { _ in }
             } label: {
-                Image(systemName: AppTab.overview.symbolImage)
+                Image(module: AppTab.overview.symbolImage)
             }
             
             Tab(value: AppTab.statistic) {
@@ -82,7 +82,7 @@ struct MainTabScreen: View {
                     StatisticalScreen()
                 } destination: { _ in }
             } label: {
-                Image(systemName: AppTab.statistic.symbolImage)
+                Image(module: AppTab.statistic.symbolImage)
             }
             
             Tab(value: AppTab.profile) {
@@ -97,7 +97,7 @@ struct MainTabScreen: View {
                     }
                 }
             } label: {
-                Image(systemName: AppTab.profile.symbolImage)
+                Image(module: AppTab.profile.symbolImage)
             }
         }
         .tint(.cyan)

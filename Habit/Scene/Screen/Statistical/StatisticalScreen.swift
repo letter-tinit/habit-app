@@ -52,7 +52,7 @@ struct StatisticalScreen: View {
                     Haptic.selection()
                     habitStore.usesCompactStatisticsView.toggle()
                 } label: {
-                    Image(systemName: habitStore.usesCompactStatisticsView ? "rectangle.expand.vertical" : "rectangle.compress.vertical")
+                    Image(module: habitStore.usesCompactStatisticsView ? "rectangle.expand.vertical" : "rectangle.compress.vertical")
                 }
             }
         }

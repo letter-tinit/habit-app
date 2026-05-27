@@ -38,7 +38,7 @@ struct HomeScreen: View {
                                     Button {
                                         resetHabit(habit)
                                     } label: {
-                                        Image(systemName: "arrow.counterclockwise")
+                                        Image(module: "arrow.counterclockwise")
                                             .tint(.skyBlue)
                                     }
                                 }
@@ -72,7 +72,7 @@ struct HomeScreen: View {
                     Haptic.impact(.medium)
                     router.push(.createHabit)
                 } label: {
-                    Image(systemName: "plus")
+                    Image(module: "plus")
                         .fontWeight(.bold)
                         .frame(width: 30, height: 30)
                 }

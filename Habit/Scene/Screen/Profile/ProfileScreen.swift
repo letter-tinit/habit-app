@@ -124,7 +124,7 @@ struct ProfileScreen: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Image(systemName: "person.crop.circle.fill")
+                Image(module: "person.crop.circle.fill")
                     .resizable()
                     .scaledToFit()
                     .foregroundStyle(.secondary)
@@ -247,7 +247,7 @@ struct ProfileScreen: View {
         systemImage: String
     ) -> some View {
         HStack(spacing: 14) {
-            Image(systemName: systemImage)
+            Image(module: systemImage)
                 .font(.title3.weight(.semibold))
                 .frame(width: 38, height: 38)
                 .background(Color.primary.opacity(0.06))

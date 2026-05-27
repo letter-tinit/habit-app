@@ -42,7 +42,7 @@ struct HabitDetailContent: View {
                                 isFocused = true
                             }
                         } label: {
-                            Image(systemName: habit.icon)
+                            Image(module: habit.icon)
                                 .frame(width: 72, height: 72)
                                 .liquidGlassSurface(cornerRadius: 24, interactive: true)
                         }
@@ -96,7 +96,7 @@ struct HabitDetailContent: View {
                 Button {
                     showEditHabit = true
                 } label: {
-                    Image(systemName: "pencil")
+                    Image(module: "pencil")
                 }
             }
 
@@ -104,7 +104,7 @@ struct HabitDetailContent: View {
                 Button {
                     showsArchiveConfirmation = true
                 } label: {
-                    Image(systemName: habit.isArchived ? "tray.and.arrow.up" : "archivebox")
+                    Image(module: habit.isArchived ? "tray.and.arrow.up" : "archivebox")
                 }
             }
 
@@ -112,7 +112,7 @@ struct HabitDetailContent: View {
                 Button(role: .destructive) {
                     showsDeleteConfirmation = true
                 } label: {
-                    Image(systemName: "trash")
+                    Image(module: "trash")
                 }
             }
         }
