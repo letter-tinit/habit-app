@@ -257,9 +257,11 @@ extension HabitStore {
         )
         do {
             habits = try modelContext.fetch(descriptor)
+            publishWidgetSnapshot()
         } catch {
             Logger.error("Failed to fetch habits: \(error)")
             habits = []
+            publishWidgetSnapshot()
         }
     }
 
@@ -454,6 +456,7 @@ extension HabitStore {
 
         updateStreaks(for: habit)
         _ = save()
+        publishWidgetSnapshot()
     }
 
     func resetHabitEntry(_ habit: Habit) {
@@ -478,6 +481,95 @@ extension HabitStore {
 
         updateStreaks(for: habit)
         _ = save()
+        publishWidgetSnapshot()
+    }
+}
+
+// MARK: - Widget Sync
+
+extension HabitStore {
+    func syncWidgetActionsAndSnapshot() {
+        applyPendingWidgetActions()
+        publishWidgetSnapshot()
+    }
+
+    func publishWidgetSnapshot() {
+        let today = Date()
+        let items = habits
+            .filter { !$0.isArchived }
+            .sorted { $0.sortOrder < $1.sortOrder }
+            .map { habit in
+                let entry = habit.entry(for: today)
+                return HabitWidgetItem(
+                    id: habit.id,
+                    name: habit.name,
+                    icon: habit.icon,
+                    colorHex: habit.colorHex,
+                    goalTypeRawValue: habit.goalType.rawValue,
+                    goalCount: habit.goalCount,
+                    goalUnit: habit.goalUnit,
+                    completedCount: entry?.completedCount ?? 0,
+                    currentStreak: habit.currentStreak,
+                    scheduledWeekdays: scheduledWeekdays(for: habit)
+                )
+            }
+
+        HabitWidgetBridge.saveSnapshot(
+            HabitWidgetSnapshot(date: today, habits: Array(items))
+        )
+    }
+
+    private func applyPendingWidgetActions() {
+        let actions = HabitWidgetBridge.loadPendingActions()
+        guard !actions.isEmpty else {
+            return
+        }
+
+        for action in actions.sorted(by: { $0.createdAt < $1.createdAt }) {
+            guard let habit = habit(id: action.habitID),
+                  isScheduled(habit, on: Date())
+            else {
+                continue
+            }
+
+            updateHabitEntry(habit, on: Date(), completedCount: action.completedCount)
+        }
+
+        HabitWidgetBridge.clearPendingActions()
+        _ = save()
+    }
+
+    private func updateHabitEntry(
+        _ habit: Habit,
+        on date: Date,
+        completedCount: Int
+    ) {
+        let targetDate = AppCalendar.current.startOfDay(for: date)
+
+        if let existingEntry = habit.entries.first(where: { $0.date.isEqual(with: targetDate) }) {
+            existingEntry.completedCount = completedCount
+            existingEntry.updatedAt = Date()
+        } else {
+            let newEntry = HabitEntry(date: targetDate, completedCount: completedCount)
+            newEntry.habit = habit
+            habit.entries.append(newEntry)
+            modelContext.insert(newEntry)
+        }
+
+        updateStreaks(for: habit)
+    }
+
+    private func scheduledWeekdays(for habit: Habit) -> [Int] {
+        switch habit.frequency {
+        case .daily:
+            Array(0...6)
+        case .weekday:
+            Array(1...5)
+        case .weekend:
+            [0, 6]
+        case .custom:
+            habit.targetDaysOfWeek
+        }
     }
 }
 

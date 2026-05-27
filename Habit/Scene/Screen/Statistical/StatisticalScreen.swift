@@ -9,7 +9,7 @@ import SwiftUI
 
 struct StatisticalScreen: View {
     @Environment(HabitStore.self) private var habitStore
-    @State private var statisticsScope: StatisticsScope = .month
+    @State private var statisticsScope: StatisticsScope = .week
     @State private var statisticsDate: Date = Date()
     @State private var title: String = "STATISTICAL"
 

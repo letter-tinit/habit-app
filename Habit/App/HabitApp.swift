@@ -12,6 +12,7 @@ import UserNotifications
 @main
 struct HabitApp: App {
     let container: ModelContainer
+    @Environment(\.scenePhase) private var scenePhase
     @State private var habitStore: HabitStore
     private let notificationDelegate = AppNotificationDelegate()
 
@@ -40,6 +41,16 @@ struct HabitApp: App {
                 .modelContainer(container)
                 .environment(habitStore)
                 .preferredColorScheme(preferredColorScheme)
+                .onAppear {
+                    habitStore.syncWidgetActionsAndSnapshot()
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    guard newPhase == .active else {
+                        return
+                    }
+
+                    habitStore.syncWidgetActionsAndSnapshot()
+                }
         }
     }
 

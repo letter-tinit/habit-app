@@ -6,8 +6,37 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		6EE62289874047AD9BCEB45C /* HabitWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AE2D3CC95F34461E9E9B0DF6 /* HabitWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		8347DE686FE44133B2D6CC81 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 13F3E5832FA0610100955384 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A58B223987104FA49B714921;
+			remoteInfo = HabitWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		168A6D8635F14FE3911C2FD6 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				6EE62289874047AD9BCEB45C /* HabitWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		13F3E58B2FA0610100955384 /* Habit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Habit.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AE2D3CC95F34461E9E9B0DF6 /* HabitWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabitWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -17,6 +46,13 @@
 				Info.plist,
 			);
 			target = 13F3E58A2FA0610100955384 /* Habit */;
+		};
+		0F770EDB5AF5432CB0DE044D /* Exceptions for "HabitWidget" folder in "HabitWidget" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = A58B223987104FA49B714921 /* HabitWidget */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -29,10 +65,25 @@
 			path = Habit;
 			sourceTree = "<group>";
 		};
+		BF6D82DDD6A346009D03F766 /* HabitWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0F770EDB5AF5432CB0DE044D /* Exceptions for "HabitWidget" folder in "HabitWidget" target */,
+			);
+			path = HabitWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		13F3E5882FA0610100955384 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		602DAAC955024DEEB1EA3B23 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -46,6 +97,7 @@
 			isa = PBXGroup;
 			children = (
 				13F3E58D2FA0610100955384 /* Habit */,
+				BF6D82DDD6A346009D03F766 /* HabitWidget */,
 				13F3E58C2FA0610100955384 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +106,7 @@
 			isa = PBXGroup;
 			children = (
 				13F3E58B2FA0610100955384 /* Habit.app */,
+				AE2D3CC95F34461E9E9B0DF6 /* HabitWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -68,10 +121,12 @@
 				13F3E5872FA0610100955384 /* Sources */,
 				13F3E5882FA0610100955384 /* Frameworks */,
 				13F3E5892FA0610100955384 /* Resources */,
+				168A6D8635F14FE3911C2FD6 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				CB4A5A4FE29B4F809FF18459 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				13F3E58D2FA0610100955384 /* Habit */,
@@ -82,6 +137,28 @@
 			productName = Habit;
 			productReference = 13F3E58B2FA0610100955384 /* Habit.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A58B223987104FA49B714921 /* HabitWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6A629C62FE3342C481C8D30E /* Build configuration list for PBXNativeTarget "HabitWidget" */;
+			buildPhases = (
+				967FE9AC59584EDBBFA69E05 /* Sources */,
+				602DAAC955024DEEB1EA3B23 /* Frameworks */,
+				5394B5B80C0F4E9F84E24B81 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				BF6D82DDD6A346009D03F766 /* HabitWidget */,
+			);
+			name = HabitWidget;
+			packageProductDependencies = (
+			);
+			productName = HabitWidget;
+			productReference = AE2D3CC95F34461E9E9B0DF6 /* HabitWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -94,6 +171,9 @@
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					13F3E58A2FA0610100955384 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					A58B223987104FA49B714921 = {
 						CreatedOnToolsVersion = 26.2;
 					};
 				};
@@ -113,12 +193,20 @@
 			projectRoot = "";
 			targets = (
 				13F3E58A2FA0610100955384 /* Habit */,
+				A58B223987104FA49B714921 /* HabitWidget */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		13F3E5892FA0610100955384 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5394B5B80C0F4E9F84E24B81 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -135,7 +223,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		967FE9AC59584EDBBFA69E05 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CB4A5A4FE29B4F809FF18459 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A58B223987104FA49B714921 /* HabitWidget */;
+			targetProxy = 8347DE686FE44133B2D6CC81 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		13F3E5942FA0610300955384 /* Debug */ = {
@@ -264,6 +367,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = HabitApp;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Habit/Habit.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5CG4Q5F4SZ;
@@ -302,6 +406,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = HabitApp;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Habit/Habit.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5CG4Q5F4SZ;
@@ -335,6 +440,72 @@
 			};
 			name = Release;
 		};
+		A474EBF6DCAB464AB72AFF8E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HabitWidget/HabitWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5CG4Q5F4SZ;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HabitWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tinit.Habit.HabitWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C7A7969AE6874821AE512148 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HabitWidget/HabitWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5CG4Q5F4SZ;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = HabitWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tinit.Habit.HabitWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -352,6 +523,15 @@
 			buildConfigurations = (
 				13F3E5972FA0610300955384 /* Debug */,
 				13F3E5982FA0610300955384 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6A629C62FE3342C481C8D30E /* Build configuration list for PBXNativeTarget "HabitWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A474EBF6DCAB464AB72AFF8E /* Debug */,
+				C7A7969AE6874821AE512148 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
