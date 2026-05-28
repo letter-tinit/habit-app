@@ -160,10 +160,7 @@ struct HabitItemView: View {
                     .padding(8)
                     .buttonStyle(.plain)
                     .disabled(!canEditEntry)
-                    .glassEffect(
-                        .regular,
-                        in: .circle
-                    )
+                    .background(Color.primary.opacity(0.08), in: Circle())
                 }
             }
             .padding(.horizontal, 10)

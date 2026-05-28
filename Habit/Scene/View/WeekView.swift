@@ -100,30 +100,33 @@ struct WeekView: View {
     
     private func weekRow(for page: Int, weekStartsOnMonday: Bool) -> some View {
         let dates = weekDates(for: page, weekStartsOnMonday: weekStartsOnMonday)
+        let summaries = habitStore.weekDaySummaries(for: dates)
+
         return HStack {
-            ForEach(Array(dates.enumerated()), id: \.element) { index, date in
-                let isSelected = habitStore.isSelectedDay(date)
-                let isToday = date.isToday()
-                let isComplete = habitStore.isComplete(on: date)
-                let dateState = DateState(isSelected: isSelected, isToday: isToday, isComplete: isComplete)
+            ForEach(Array(summaries.enumerated()), id: \.element.date) { index, summary in
+                let dateState = DateState(
+                    isSelected: summary.isSelected,
+                    isToday: summary.isToday,
+                    isComplete: summary.isComplete
+                )
                 let tintColor: Color = dateState.color
-                let fontWeight: Font.Weight = isSelected ? .bold : .regular
+                let fontWeight: Font.Weight = summary.isSelected ? .bold : .regular
                 
                 Button {
                     baseAnimation {
                         Haptic.selection()
-                        habitStore.didChangeSelecteDate(date)
+                        habitStore.didChangeSelecteDate(summary.date)
                     }
                 } label: {
                     VStack(spacing: 10) {
-                        Text(date.toString(withFormat: .dayName))
+                        Text(summary.date.toString(withFormat: .dayName))
                             .font(.caption)
                             .fontDesign(.rounded)
                             .fontWeight(fontWeight)
 
                         CircularWithTitleProgressView(
-                            progress: habitStore.completionRatio(on: date),
-                            title: date.toString(withFormat: .dayNo),
+                            progress: summary.completionRatio,
+                            title: summary.date.toString(withFormat: .dayNo),
                             tintColor: tintColor,
                             fontWeight: fontWeight
                         )
@@ -139,14 +142,14 @@ struct WeekView: View {
                             )
                     }
                     .shadow(
-                        color: isSelected ? Color.rosePink.opacity(0.65) : .clear,
+                        color: summary.isSelected ? Color.rosePink.opacity(0.65) : .clear,
                         radius: 4,
                         y: 4
                     )
-                    .scaleEffect(isSelected ? 1.1 : 1)
+                    .scaleEffect(summary.isSelected ? 1.1 : 1)
                 }
                 
-                if index < dates.count - 1 {
+                if index < summaries.count - 1 {
                     Spacer()
                 }
             }
@@ -186,7 +189,7 @@ struct WeekView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 10)
-//        .liquidGlassSurface(cornerRadius: 28)
+        .liquidGlassSurface(cornerRadius: 28)
     }
 }
 

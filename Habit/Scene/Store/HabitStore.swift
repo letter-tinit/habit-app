@@ -17,6 +17,14 @@ struct HabitStatisticSummary {
     let totalTargetCount: Int
 }
 
+struct WeekDaySummary {
+    let date: Date
+    let isSelected: Bool
+    let isToday: Bool
+    let isComplete: Bool
+    let completionRatio: Double
+}
+
 @Observable
 final class HabitStore {
     // MARK: - Dependencies
@@ -26,11 +34,21 @@ final class HabitStore {
     var profileTitle: String = AppString.ScreenTitle.profile
     var habits: [Habit] = []
     var filteredHabit: [Habit] {
-        habits
-            .filter(isHabit)
+        let calendar = AppCalendar.current
+        let targetDate = calendar.startOfDay(for: selectedDate)
+        let scheduledHabits = habits.filter {
+            shouldSchedule($0, on: targetDate, calendar: calendar)
+        }
+        let completionByHabitID = Dictionary(
+            uniqueKeysWithValues: scheduledHabits.map {
+                ($0.id, isComplete(for: $0, on: targetDate, calendar: calendar))
+            }
+        )
+
+        return scheduledHabits
             .sorted { first, second in
-                let firstIsComplete = isComplete(for: first, on: selectedDate)
-                let secondIsComplete = isComplete(for: second, on: selectedDate)
+                let firstIsComplete = completionByHabitID[first.id] ?? false
+                let secondIsComplete = completionByHabitID[second.id] ?? false
 
                 if firstIsComplete != secondIsComplete {
                     return !firstIsComplete
@@ -104,6 +122,48 @@ extension HabitStore {
     /// Output: check is input date is selected Date or not
     func isSelectedDay(_ date: Date) -> Bool {
         date.isEqual(with: selectedDate)
+    }
+
+    func weekDaySummaries(for dates: [Date]) -> [WeekDaySummary] {
+        let calendar = AppCalendar.current
+        let targetDates = Set(dates.map { calendar.startOfDay(for: $0) })
+        let entriesByHabitID = entriesByHabitID(for: targetDates, calendar: calendar)
+
+        return dates.map { date in
+            let targetDate = calendar.startOfDay(for: date)
+            let scheduledHabits = habits.filter {
+                shouldSchedule($0, on: targetDate, calendar: calendar)
+            }
+
+            guard !scheduledHabits.isEmpty else {
+                return WeekDaySummary(
+                    date: date,
+                    isSelected: date.isEqual(with: selectedDate),
+                    isToday: date.isToday(),
+                    isComplete: false,
+                    completionRatio: 0
+                )
+            }
+
+            let totalRatio = scheduledHabits.reduce(0.0) { result, habit in
+                guard habit.goalCount > 0 else {
+                    return result
+                }
+
+                let completedCount = entriesByHabitID[habit.id]?[targetDate]?.completedCount ?? 0
+                let ratio = min(Double(completedCount) / Double(habit.goalCount), 1.0)
+                return result + ratio
+            }
+            let completionRatio = totalRatio / Double(scheduledHabits.count)
+
+            return WeekDaySummary(
+                date: date,
+                isSelected: date.isEqual(with: selectedDate),
+                isToday: date.isToday(),
+                isComplete: completionRatio == 1.0,
+                completionRatio: completionRatio
+            )
+        }
     }
 }
 
@@ -440,12 +500,20 @@ extension HabitStore {
         if let existingEntry = habit.entries.first(where: {
             $0.date.isEqual(with: targetDate)
         }) {
+            guard existingEntry.completedCount != completedCount || note != nil else {
+                return
+            }
+
             existingEntry.completedCount = completedCount
             if let note = note {
                 existingEntry.note = note
             }
             existingEntry.updatedAt = Date()
         } else {
+            guard completedCount > 0 || note?.isEmpty == false else {
+                return
+            }
+
             let newEntry = HabitEntry(date: targetDate, completedCount: completedCount, note: note ?? "")
             newEntry.habit = habit
             habit.entries.append(newEntry)
@@ -654,6 +722,71 @@ private extension HabitStore {
         case .custom:
             return habit.targetDaysOfWeek.contains(weekday)
         }
+    }
+}
+
+// MARK: - Performance Helpers
+
+private extension HabitStore {
+    func entriesByHabitID(
+        for targetDates: Set<Date>,
+        calendar: Calendar
+    ) -> [UUID: [Date: HabitEntry]] {
+        habits.reduce(into: [UUID: [Date: HabitEntry]]()) { result, habit in
+            for entry in habit.entries {
+                let entryDate = calendar.startOfDay(for: entry.date)
+                guard targetDates.contains(entryDate) else {
+                    continue
+                }
+
+                result[habit.id, default: [:]][entryDate] = entry
+            }
+        }
+    }
+
+    func isComplete(
+        for habit: Habit,
+        on targetDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard shouldSchedule(habit, on: targetDate, calendar: calendar),
+              habit.goalCount > 0
+        else {
+            return false
+        }
+
+        let targetDate = calendar.startOfDay(for: targetDate)
+        let entry = habit.entries.first {
+            calendar.isDate($0.date, inSameDayAs: targetDate)
+        }
+        return entry?.isCompleted ?? false
+    }
+
+    func completionRatio(
+        on targetDate: Date,
+        calendar: Calendar,
+        entriesByHabitID: [UUID: [Date: HabitEntry]]
+    ) -> Double {
+        let targetDate = calendar.startOfDay(for: targetDate)
+        let scheduledHabits = habits.filter {
+            shouldSchedule($0, on: targetDate, calendar: calendar)
+        }
+
+        guard !scheduledHabits.isEmpty else {
+            return 0
+        }
+
+        let totalRatio = scheduledHabits.reduce(0.0) { result, habit in
+            guard habit.goalCount > 0 else {
+                return result
+            }
+
+            let completedCount = entriesByHabitID[habit.id]?[targetDate]?.completedCount ?? 0
+            let ratio = min(Double(completedCount) / Double(habit.goalCount), 1.0)
+            return result + ratio
+        }
+
+        return totalRatio / Double(scheduledHabits.count)
     }
 }
 
@@ -1070,9 +1203,15 @@ private extension HabitStore {
     }
 
     func completionRatio(for dates: [Date]) -> Double {
-        let validDates = dates.filter { date in
+        let calendar = AppCalendar.current
+        let targetDates = dates.map { calendar.startOfDay(for: $0) }
+        let entriesByHabitID = entriesByHabitID(
+            for: Set(targetDates),
+            calendar: calendar
+        )
+        let validDates = targetDates.filter { date in
             habits.contains {
-                shouldSchedule($0, on: date, calendar: AppCalendar.current)
+                shouldSchedule($0, on: date, calendar: calendar)
             }
         }
 
@@ -1081,7 +1220,11 @@ private extension HabitStore {
         }
 
         let totalRatio = validDates.reduce(0.0) { result, date in
-            result + completionRatio(on: date)
+            result + completionRatio(
+                on: date,
+                calendar: calendar,
+                entriesByHabitID: entriesByHabitID
+            )
         }
 
         return totalRatio / Double(validDates.count)
@@ -1089,7 +1232,12 @@ private extension HabitStore {
 
     func completionRatio(for habit: Habit, dates: [Date]) -> Double {
         let calendar = AppCalendar.current
-        let validDates = dates.filter {
+        let targetDates = dates.map { calendar.startOfDay(for: $0) }
+        let entriesByDate = habit.entries.reduce(into: [Date: HabitEntry]()) { result, entry in
+            let entryDate = calendar.startOfDay(for: entry.date)
+            result[entryDate] = entry
+        }
+        let validDates = targetDates.filter {
             shouldSchedule(habit, on: $0, calendar: calendar)
         }
 
@@ -1098,7 +1246,13 @@ private extension HabitStore {
         }
 
         let totalRatio = validDates.reduce(0.0) { result, date in
-            result + completionRatio(for: habit, on: date)
+            guard habit.goalCount > 0 else {
+                return result
+            }
+
+            let completedCount = entriesByDate[date]?.completedCount ?? 0
+            let ratio = min(Double(completedCount) / Double(habit.goalCount), 1.0)
+            return result + ratio
         }
 
         return totalRatio / Double(validDates.count)
@@ -1106,7 +1260,8 @@ private extension HabitStore {
 
     func statisticSummary(for habit: Habit, dates: [Date]) -> HabitStatisticSummary {
         let calendar = AppCalendar.current
-        let scheduledDates = dates.filter { shouldSchedule(habit, on: $0, calendar: calendar) }
+        let scheduledDates = dates.map { calendar.startOfDay(for: $0) }
+            .filter { shouldSchedule(habit, on: $0, calendar: calendar) }
         let archivedDay = habit.archivedAt.map { calendar.startOfDay(for: $0) }
 
         guard !scheduledDates.isEmpty else {
@@ -1121,6 +1276,9 @@ private extension HabitStore {
 
         let entriesByDate = habit.entries.reduce(into: [Date: HabitEntry]()) { result, entry in
             let entryDay = calendar.startOfDay(for: entry.date)
+            guard scheduledDates.contains(entryDay) else {
+                return
+            }
             if let archivedDay, entryDay > archivedDay {
                 return
             }
@@ -1128,15 +1286,21 @@ private extension HabitStore {
         }
 
         let completedCount = scheduledDates.reduce(0) { result, date in
-            result + min(entriesByDate[calendar.startOfDay(for: date)]?.completedCount ?? 0, habit.goalCount)
+            result + min(entriesByDate[date]?.completedCount ?? 0, habit.goalCount)
         }
-        let completedDays = scheduledDates.filter {
-            completionRatio(for: habit, on: $0) >= 1
+        let completedDays = scheduledDates.filter { date in
+            guard habit.goalCount > 0 else {
+                return false
+            }
+            return (entriesByDate[date]?.completedCount ?? 0) >= habit.goalCount
         }.count
         let targetCount = scheduledDates.count * habit.goalCount
+        let progress = targetCount == 0
+        ? 0
+        : Double(completedCount) / Double(targetCount)
 
         return HabitStatisticSummary(
-            progress: completionRatio(for: habit, dates: dates),
+            progress: min(progress, 1),
             scheduledDays: scheduledDates.count,
             completedDays: completedDays,
             totalCompletedCount: completedCount,
@@ -1146,6 +1310,11 @@ private extension HabitStore {
 
     func aggregateStatisticSummary(dates: [Date]) -> HabitStatisticSummary {
         let calendar = AppCalendar.current
+        let targetDates = dates.map { calendar.startOfDay(for: $0) }
+        let entriesByHabitID = entriesByHabitID(
+            for: Set(targetDates),
+            calendar: calendar
+        )
         var scheduledDayCount = 0
         var completedDayCount = 0
         var totalCompletedCount = 0
@@ -1153,7 +1322,7 @@ private extension HabitStore {
         var totalProgressRatio = 0.0
         var scheduledHabitCount = 0
 
-        for date in dates {
+        for date in targetDates {
             let scheduledHabits = habits.filter {
                 shouldSchedule($0, on: date, calendar: calendar) && $0.goalCount > 0
             }
@@ -1166,9 +1335,7 @@ private extension HabitStore {
 
             var isDateComplete = true
             for habit in scheduledHabits {
-                let entry = habit.entries.first {
-                    calendar.isDate($0.date, inSameDayAs: date)
-                }
+                let entry = entriesByHabitID[habit.id]?[date]
                 let completedCount = min(entry?.completedCount ?? 0, habit.goalCount)
                 let targetCount = habit.goalCount
                 let progressRatio = min(Double(completedCount) / Double(targetCount), 1)

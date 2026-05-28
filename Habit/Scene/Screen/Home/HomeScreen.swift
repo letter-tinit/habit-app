@@ -14,13 +14,15 @@ struct HomeScreen: View {
     
     var body: some View {
         @Bindable var habitStore = habitStore
+        let filteredHabits = habitStore.filteredHabit
+
         BaseScreen($habitStore.homeTitle) {
             VStack(spacing: 0) {
                 WeekView()
                     .padding(.horizontal)
                     .padding(.top, 10)
                 
-                if habitStore.filteredHabit.isEmpty {
+                if filteredHabits.isEmpty {
                     ContentUnavailableView(
                         "No Habits",
                         systemImage: "figure.run.square.stack",
@@ -28,7 +30,7 @@ struct HomeScreen: View {
                     )
                 } else {
                     AppList {
-                        ForEach(habitStore.filteredHabit, id: \.id) { habit in
+                        ForEach(filteredHabits, id: \.id) { habit in
                             HabitItemView(habit: habit, selectedDate: habitStore.selectedDate) { action in
                                 handleHabitItemAction(action, for: habit)
                             }
@@ -44,9 +46,9 @@ struct HomeScreen: View {
                                 }
                             }
                         }
-                        .onMove { source, destination in
-                            habitStore.moveFilteredHabits(from: source, to: destination)
-                        }
+//                        .onMove { source, destination in
+//                            habitStore.moveFilteredHabits(from: source, to: destination)
+//                        }
                     }
                     // MARK: - List Configure
                     .listRowSpacing(20)
@@ -60,12 +62,12 @@ struct HomeScreen: View {
         }
         // MARK: - BaseScreen Configure
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                if !habitStore.filteredHabit.isEmpty {
-                    EditButton()
-                        .fontDesign(.rounded)
-                }
-            }
+//            ToolbarItem(placement: .topBarLeading) {
+//                if !filteredHabits.isEmpty {
+//                    EditButton()
+//                        .fontDesign(.rounded)
+//                }
+//            }
 
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

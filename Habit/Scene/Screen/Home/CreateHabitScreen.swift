@@ -688,16 +688,6 @@ private struct SymbolPickerSheet: View {
     }
 }
 
-//    .resizable()
-//    .aspectRatio(contentMode: .fit)
-//    .frame(maxWidth: .infinity)
-//    .frame(height: 52)
-//    .background(
-//        RoundedRectangle(cornerRadius: 10)
-//            .fill(selectedSymbol == symbol ? Color.cyan : Color.primary.opacity(0.06))
-//    )
-//    .foregroundStyle(selectedSymbol == symbol ? .white : .primary)
-
 private struct CalendarPickerSheet: View {
     let title: String
     var minimumDate: Date?

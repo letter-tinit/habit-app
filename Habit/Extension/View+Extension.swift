@@ -28,12 +28,14 @@ extension View {
 
     func liquidGlassSurface(
         cornerRadius: CGFloat = 18,
-        interactive: Bool = false
+        interactive: Bool = false,
+        usesNativeGlass: Bool = false
     ) -> some View {
         modifier(
             LiquidGlassSurfaceModifier(
                 cornerRadius: cornerRadius,
-                interactive: interactive
+                interactive: interactive,
+                usesNativeGlass: usesNativeGlass
             )
         )
     }
@@ -43,16 +45,19 @@ extension View {
 private struct LiquidGlassSurfaceModifier: ViewModifier {
     let cornerRadius: CGFloat
     let interactive: Bool
+    let usesNativeGlass: Bool
     @Environment(\.colorScheme) private var colorScheme
     
     @ViewBuilder
     func body(content: Content) -> some View {
-        if interactive {
+        if usesNativeGlass && interactive {
             surface(content)
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
-        } else {
+        } else if usesNativeGlass {
             surface(content)
                 .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+        } else {
+            surface(content)
         }
     }
 
