@@ -12,20 +12,29 @@ enum AppConstant {
     static let screenHeight = UIScreen.current.bounds.height
     
     static let colorOptions = [
-        "#4ECDC4",
+        // Reds / Pinks
         "#FF6B6B",
-        "#FFD93D",
-        "#6C5CE7",
-        "#A8E6CF",
-        "#87CEEB",
-        "#FF66B2",
-        "#FD8A5E",
-        "#50C878",
-        "#4169E1",
         "#E0115F",
-        "#8E7DBE",
+        "#FF66B2",
+
+        // Oranges / Yellows
+        "#FD8A5E",
         "#FF9F1C",
-        "#7AC74F"
+        "#FFD93D",
+
+        // Greens
+        "#7AC74F",
+        "#50C878",
+        "#A8E6CF",
+
+        // Cyans / Blues
+        "#4ECDC4",
+        "#87CEEB",
+        "#4169E1",
+
+        // Purples
+        "#6C5CE7",
+        "#8E7DBE"
     ]
     
     static let defaultColor = "#4ECDC4"
@@ -92,6 +101,8 @@ enum AppConstant {
         "guitars.fill",
         
         // Resource
-        "ic_obsidian"
+        "ic_obsidian",
+        "ic_anki",
+        "ic_tomato"
     ]
 }

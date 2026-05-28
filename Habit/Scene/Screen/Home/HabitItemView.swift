@@ -113,7 +113,7 @@ struct HabitItemView: View {
                 Spacer()
             }
             .padding()
-            .shadow(color: .primary.opacity(0.2), radius: 2)
+            .shadow(color: .black.opacity(0.1), radius: 3)
         }
         // MARK: - PLUS BUTTON
         .overlay(alignment: .trailing) {

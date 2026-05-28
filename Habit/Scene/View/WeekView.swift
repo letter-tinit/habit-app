@@ -186,7 +186,7 @@ struct WeekView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 10)
-        .liquidGlassSurface(cornerRadius: 28)
+//        .liquidGlassSurface(cornerRadius: 28)
     }
 }
 

@@ -650,7 +650,7 @@ private struct SymbolPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     
     private let columns = [
-        GridItem(.adaptive(minimum: 56), spacing: 12)
+        GridItem(.adaptive(minimum: 52), spacing: 12)
     ]
     
     var body: some View {
@@ -668,6 +668,8 @@ private struct SymbolPickerSheet: View {
                         } label: {
                             Image(module: symbol)
                                 .font(.title3)
+                                .padding(8)
+                                .scaledToFit()
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 52)
                                 .foregroundStyle(selectedSymbol == symbol ? .white : .primary)
@@ -685,6 +687,16 @@ private struct SymbolPickerSheet: View {
         .padding(20)
     }
 }
+
+//    .resizable()
+//    .aspectRatio(contentMode: .fit)
+//    .frame(maxWidth: .infinity)
+//    .frame(height: 52)
+//    .background(
+//        RoundedRectangle(cornerRadius: 10)
+//            .fill(selectedSymbol == symbol ? Color.cyan : Color.primary.opacity(0.06))
+//    )
+//    .foregroundStyle(selectedSymbol == symbol ? .white : .primary)
 
 private struct CalendarPickerSheet: View {
     let title: String

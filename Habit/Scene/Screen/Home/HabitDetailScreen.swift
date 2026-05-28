@@ -43,6 +43,8 @@ struct HabitDetailContent: View {
                             }
                         } label: {
                             Image(module: habit.icon)
+                                .padding(16)
+                                .scaledToFit()
                                 .frame(width: 72, height: 72)
                                 .liquidGlassSurface(cornerRadius: 24, interactive: true)
                         }
