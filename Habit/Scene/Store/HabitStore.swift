@@ -682,9 +682,14 @@ private extension HabitStore {
 }
 
 // MARK: - Scheduling
-
-private extension HabitStore {
-    func shouldSchedule(
+extension HabitStore {
+    func rescheduleHabitNotifications() {
+        for habit in habits {
+            HabitNotificationScheduler.rescheduleNotifications(for: habit)
+        }
+    }
+    
+    private func shouldSchedule(
         _ habit: Habit,
         on date: Date,
         calendar: Calendar
@@ -965,18 +970,12 @@ private extension HabitStore {
                 daysOfWeek: backup.daysOfWeek,
                 isEnabled: backup.isEnabled
             )
-
+            
             reminder.id = backup.id
             reminder.notificationID = backup.notificationID
             reminder.habit = habit
             habit.reminders.append(reminder)
             modelContext.insert(reminder)
-        }
-    }
-
-    func rescheduleHabitNotifications() {
-        for habit in habits {
-            HabitNotificationScheduler.rescheduleNotifications(for: habit)
         }
     }
 }
