@@ -13,6 +13,9 @@ final class Habit: Hashable {
     var createdAt: Date
     var archivedAt: Date?      // nil = active
     var sortOrder: Int = 0
+    var seriesID: UUID?        // Shared by all versions of the same habit
+    var replacedHabitID: UUID? // Previous habit version, if this habit continues one
+    var versionNumber: Int?    // nil for older data; treated as version 1
 
     // Scheduling
     var startDate: Date?                    // nil falls back to createdAt for older data
@@ -50,15 +53,23 @@ final class Habit: Hashable {
         targetDaysOfWeek: [Int] = [],
         goalType: GoalType = .todo,
         goalCount: Int = 1,
-        goalUnit: String = "times"
+        goalUnit: String = "times",
+        seriesID: UUID? = nil,
+        replacedHabitID: UUID? = nil,
+        versionNumber: Int = 1
     ) {
-        self.id = UUID()
+        let habitID = UUID()
+
+        self.id = habitID
         self.name = name
         self.habitDescription = description
         self.icon = icon
         self.colorHex = colorHex
         self.createdAt = Date()
         self.sortOrder = Int(Date().timeIntervalSince1970)
+        self.seriesID = seriesID ?? habitID
+        self.replacedHabitID = replacedHabitID
+        self.versionNumber = max(versionNumber, 1)
         self.startDate = startDate
         self.endDate = endDate
         self.frequency = frequency
@@ -94,6 +105,18 @@ extension Habit {
 
     var effectiveStartDate: Date {
         startDate ?? createdAt
+    }
+
+    var effectiveSeriesID: UUID {
+        seriesID ?? id
+    }
+
+    var displayVersionNumber: Int {
+        max(versionNumber ?? 1, 1)
+    }
+
+    var isVersioned: Bool {
+        displayVersionNumber > 1 || replacedHabitID != nil
     }
 
     func entry(for date: Date) -> HabitEntry? {

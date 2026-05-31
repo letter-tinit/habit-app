@@ -22,13 +22,28 @@ struct HabitDetailScreen: View {
     }
 }
 
+private enum HabitDetailSheet: Identifiable {
+    case edit
+    case newVersion
+
+    var id: String {
+        switch self {
+        case .edit:
+            "edit"
+        case .newVersion:
+            "newVersion"
+        }
+    }
+}
+
 struct HabitDetailContent: View {
     @Environment(HabitStore.self) private var habitStore
+    @Environment(HomeRouter.self) private var router
     @Environment(\.dismiss) private var dismiss
     let habitID: UUID
     @Bindable var habit: Habit
     @FocusState private var isFocused: Bool
-    @State private var showEditHabit = false
+    @State private var activeSheet: HabitDetailSheet?
     @State private var showsArchiveConfirmation = false
     @State private var showsDeleteConfirmation = false
 
@@ -74,6 +89,24 @@ struct HabitDetailContent: View {
                         detailRow(title: "Reminders", value: reminderTitle)
                         Divider().opacity(0.28)
                         detailRow(title: "Goal", value: goalTitle)
+                        if shouldShowVersionInfo {
+                            Divider().opacity(0.28)
+                            detailRow(title: "Version", value: "Version \(habit.displayVersionNumber)")
+                        }
+                        if let previousVersion = habitStore.previousVersion(for: habit) {
+                            Divider().opacity(0.28)
+                            detailRow(
+                                title: "Continues from",
+                                value: "Version \(previousVersion.displayVersionNumber)"
+                            )
+                        }
+                        if let nextVersion = habitStore.nextVersion(after: habit) {
+                            Divider().opacity(0.28)
+                            detailRow(
+                                title: "Continued by",
+                                value: "Version \(nextVersion.displayVersionNumber)"
+                            )
+                        }
                         Divider().opacity(0.28)
                         detailRow(title: "Current streak", value: "\(habit.currentStreak)")
                         Divider().opacity(0.28)
@@ -88,6 +121,10 @@ struct HabitDetailContent: View {
                     }
                     .padding(.horizontal)
                     .liquidGlassSurface(cornerRadius: 20)
+
+                    if !habit.isArchived {
+                        startVersionButton
+                    }
                 }
                 .padding()
             }
@@ -96,7 +133,7 @@ struct HabitDetailContent: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    showEditHabit = true
+                    activeSheet = .edit
                 } label: {
                     Image(module: "pencil")
                 }
@@ -148,11 +185,57 @@ struct HabitDetailContent: View {
         } message: {
             Text("This permanently deletes the habit, entries, reminders, and history. This cannot be undone.")
         }
-        .sheet(isPresented: $showEditHabit) {
+        .sheet(item: $activeSheet) { sheet in
             NavigationStack {
-                CreateHabitScreen(habit: habit)
+                switch sheet {
+                case .edit:
+                    CreateHabitScreen(
+                        habit: habit,
+                        onStartNewVersion: { _ in
+                            activeSheet = .newVersion
+                        }
+                    )
+                case .newVersion:
+                    CreateHabitScreen(newVersionOf: habit) { newHabit in
+                        activeSheet = nil
+                        router.path = [.habitDetail(newHabit.id)]
+                    }
+                }
             }
         }
+    }
+
+    private var shouldShowVersionInfo: Bool {
+        habit.isVersioned ||
+        habitStore.previousVersion(for: habit) != nil ||
+        habitStore.nextVersion(after: habit) != nil
+    }
+
+    private var startVersionButton: some View {
+        Button {
+            activeSheet = .newVersion
+        } label: {
+            HStack(spacing: 10) {
+                Image(module: "arrow.triangle.2.circlepath")
+                    .font(.headline)
+
+                Text("Start Version \(habit.displayVersionNumber + 1)")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .fontDesign(.rounded)
+
+                Spacer(minLength: 0)
+
+                Image(module: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+        .liquidGlassSurface(cornerRadius: 16, interactive: true)
     }
 
     private var repeatTitle: String {

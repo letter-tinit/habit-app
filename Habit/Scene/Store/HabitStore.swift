@@ -401,6 +401,75 @@ extension HabitStore {
         }
     }
 
+    func nextVersionNumber(after habit: Habit) -> Int {
+        let seriesID = habit.effectiveSeriesID
+        let highestVersion = habits
+            .filter { $0.effectiveSeriesID == seriesID }
+            .map(\.displayVersionNumber)
+            .max() ?? habit.displayVersionNumber
+
+        return highestVersion + 1
+    }
+
+    func previousVersion(for habit: Habit) -> Habit? {
+        guard let replacedHabitID = habit.replacedHabitID else {
+            return nil
+        }
+
+        return self.habit(id: replacedHabitID)
+    }
+
+    func nextVersion(after habit: Habit) -> Habit? {
+        habits
+            .filter { $0.replacedHabitID == habit.id }
+            .sorted { $0.displayVersionNumber < $1.displayVersionNumber }
+            .first
+    }
+
+    @discardableResult
+    func createHabitVersion(
+        replacing oldHabit: Habit,
+        with newHabit: Habit,
+        reminders: [HabitReminderConfiguration]
+    ) -> Habit? {
+        let calendar = AppCalendar.current
+        let today = calendar.startOfDay(for: Date())
+        let minimumNewStartDay = calendar.date(byAdding: .day, value: 1, to: today) ?? today
+        let requestedNewStartDay = calendar.startOfDay(for: newHabit.effectiveStartDate)
+        let newStartDay = max(requestedNewStartDay, minimumNewStartDay)
+        let oldStartDay = calendar.startOfDay(for: oldHabit.effectiveStartDate)
+        let oldEndDay = calendar.date(byAdding: .day, value: -1, to: newStartDay) ?? today
+        let safeOldEndDay = max(oldEndDay, oldStartDay)
+        let versionNumber = nextVersionNumber(after: oldHabit)
+
+        HabitNotificationScheduler.cancelNotifications(for: oldHabit)
+
+        oldHabit.endDate = oldHabit.endDate.map {
+            min(max(calendar.startOfDay(for: $0), oldStartDay), safeOldEndDay)
+        } ?? safeOldEndDay
+        oldHabit.archivedAt = Date()
+
+        newHabit.startDate = newStartDay
+        newHabit.seriesID = oldHabit.effectiveSeriesID
+        newHabit.replacedHabitID = oldHabit.id
+        newHabit.versionNumber = versionNumber
+        newHabit.sortOrder = oldHabit.sortOrder
+
+        replaceReminders(for: newHabit, with: reminders)
+        updateStreaks(for: oldHabit)
+        modelContext.insert(newHabit)
+
+        guard save() else {
+            fetchHabits()
+            HabitNotificationScheduler.rescheduleNotifications(for: oldHabit)
+            return nil
+        }
+
+        fetchHabits()
+        HabitNotificationScheduler.rescheduleNotifications(for: newHabit)
+        return habit(id: newHabit.id) ?? newHabit
+    }
+
     @discardableResult
     func archiveHabit(_ habit: Habit) -> Bool {
         guard habit.archivedAt == nil else { return true }
@@ -927,7 +996,10 @@ private extension HabitStore {
                 targetDaysOfWeek: backup.targetDaysOfWeek,
                 goalType: backup.goalType,
                 goalCount: backup.goalCount,
-                goalUnit: backup.goalUnit
+                goalUnit: backup.goalUnit,
+                seriesID: backup.seriesID ?? backup.id,
+                replacedHabitID: backup.replacedHabitID,
+                versionNumber: backup.versionNumber ?? 1
             )
 
             habit.id = backup.id

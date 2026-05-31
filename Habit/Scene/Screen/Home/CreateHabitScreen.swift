@@ -13,6 +13,9 @@ struct CreateHabitScreen: View {
     @Environment(\.dismiss) private var dismiss
     
     private let habitToEdit: Habit?
+    private let sourceHabitForVersion: Habit?
+    private let onStartNewVersion: ((Habit) -> Void)?
+    private let onHabitSaved: ((Habit) -> Void)?
     
     @State private var screenTitle: String
     @State private var name: String
@@ -30,6 +33,7 @@ struct CreateHabitScreen: View {
     @State private var showSymbolPicker = false
     @State private var showStartDatePicker = false
     @State private var showEndDatePicker = false
+    @State private var showsVersionConfirmation = false
     @State private var reminders: [HabitReminderConfiguration]
     
     private let colorOptions = AppConstant.colorOptions
@@ -49,6 +53,18 @@ struct CreateHabitScreen: View {
     private var isEditing: Bool {
         habitToEdit != nil
     }
+
+    private var isCreatingVersion: Bool {
+        sourceHabitForVersion != nil
+    }
+
+    private var locksGoalAndSchedule: Bool {
+        isEditing
+    }
+
+    private var targetVersionNumber: Int {
+        (sourceHabitForVersion?.displayVersionNumber ?? 1) + 1
+    }
     
     private var normalizedStartDate: Date {
         AppCalendar.current.startOfDay(for: startDate)
@@ -65,17 +81,39 @@ struct CreateHabitScreen: View {
     private var endDateTitle: String {
         hasEndDate ? endDate.toString(withFormat: .custom("MMM d, yyyy")) : "No End"
     }
+
+    private var minimumStartDate: Date? {
+        guard isCreatingVersion else {
+            return nil
+        }
+
+        let calendar = AppCalendar.current
+        let today = calendar.startOfDay(for: Date())
+        return calendar.date(byAdding: .day, value: 1, to: today) ?? today
+    }
     
     private var canSave: Bool {
-        !trimmedName.isEmpty &&
+        let startDateIsAllowed = minimumStartDate.map {
+            normalizedStartDate >= $0
+        } ?? true
+
+        return !trimmedName.isEmpty &&
         goalCount > 0 &&
         !trimmedGoalUnit.isEmpty &&
+        startDateIsAllowed &&
         (!hasEndDate || normalizedEndDate >= normalizedStartDate) &&
         (frequency != .custom || !selectedDays.isEmpty)
     }
     
-    init(habit: Habit? = nil) {
+    init(
+        habit: Habit? = nil,
+        onStartNewVersion: ((Habit) -> Void)? = nil,
+        onHabitSaved: ((Habit) -> Void)? = nil
+    ) {
         habitToEdit = habit
+        sourceHabitForVersion = nil
+        self.onStartNewVersion = onStartNewVersion
+        self.onHabitSaved = onHabitSaved
         _screenTitle = State(initialValue: habit == nil ? "New Habit" : "Edit Habit")
         _name = State(initialValue: habit?.name ?? "")
         _icon = State(initialValue: habit?.icon ?? "star.fill")
@@ -91,11 +129,55 @@ struct CreateHabitScreen: View {
         _goalUnit = State(initialValue: habit?.goalUnit ?? "times")
         _reminders = State(initialValue: habit?.reminders.map(HabitReminderConfiguration.init).sorted { $0.time < $1.time } ?? [])
     }
+
+    init(
+        newVersionOf habit: Habit,
+        onHabitSaved: ((Habit) -> Void)? = nil
+    ) {
+        let calendar = AppCalendar.current
+        let today = calendar.startOfDay(for: Date())
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) ?? Date()
+        let inheritedEndDate = habit.endDate.flatMap {
+            calendar.startOfDay(for: $0) >= tomorrow ? $0 : nil
+        }
+
+        habitToEdit = nil
+        sourceHabitForVersion = habit
+        onStartNewVersion = nil
+        self.onHabitSaved = onHabitSaved
+        _screenTitle = State(initialValue: "Version \(habit.displayVersionNumber + 1)")
+        _name = State(initialValue: habit.name)
+        _icon = State(initialValue: habit.icon)
+        _habitDescription = State(initialValue: habit.habitDescription)
+        _colorHex = State(initialValue: habit.colorHex)
+        _startDate = State(initialValue: tomorrow)
+        _hasEndDate = State(initialValue: inheritedEndDate != nil)
+        _endDate = State(initialValue: inheritedEndDate ?? tomorrow)
+        _frequency = State(initialValue: habit.frequency)
+        _selectedDays = State(initialValue: Set(habit.targetDaysOfWeek.isEmpty ? Array(0...6) : habit.targetDaysOfWeek))
+        _goalType = State(initialValue: habit.goalType)
+        _goalCountText = State(initialValue: String(habit.goalCount))
+        _goalUnit = State(initialValue: habit.goalUnit)
+        _reminders = State(
+            initialValue: habit.reminders
+                .map {
+                    HabitReminderConfiguration(
+                        time: $0.time,
+                        daysOfWeek: $0.daysOfWeek,
+                        isEnabled: $0.isEnabled
+                    )
+                }
+                .sorted { $0.time < $1.time }
+        )
+    }
     
     var body: some View {
         BaseScreen($screenTitle) {
             AppScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    if isCreatingVersion {
+                        versionContextSection
+                    }
                     identitySection
                     scheduleSection
                     durationSection
@@ -115,9 +197,13 @@ struct CreateHabitScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    saveHabit()
+                    if isCreatingVersion {
+                        showsVersionConfirmation = true
+                    } else {
+                        saveHabit()
+                    }
                 } label: {
-                    Text("Save")
+                    Text(isCreatingVersion ? "Create" : "Save")
                         .fontWeight(canSave ? .bold : .regular)
                         .fontDesign(.rounded)
                 }
@@ -133,7 +219,8 @@ struct CreateHabitScreen: View {
         .sheet(isPresented: $showStartDatePicker) {
             CalendarPickerSheet(
                 title: "Start Date",
-                initialDate: startDate
+                initialDate: startDate,
+                minimumDate: minimumStartDate
             ) { selectedDate in
                 startDate = selectedDate
             }
@@ -155,8 +242,64 @@ struct CreateHabitScreen: View {
             .presentationDetents([.medium])
             .presentationDragIndicator(.hidden)
         }
+        .confirmationDialog(
+            "Create version \(targetVersionNumber)?",
+            isPresented: $showsVersionConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Create Version \(targetVersionNumber)") {
+                saveHabit()
+            }
+
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The current habit will be archived. Its statistics will stay unchanged.")
+        }
     }
     
+    @ViewBuilder
+    private var versionContextSection: some View {
+        if let sourceHabitForVersion {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 12) {
+                    Image(module: "arrow.triangle.2.circlepath")
+                        .font(.headline)
+                        .frame(width: 36, height: 36)
+                        .liquidGlassSurface(cornerRadius: 10)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Version \(targetVersionNumber)")
+                            .font(.headline)
+                            .fontDesign(.rounded)
+
+                        Text("Continues from Version \(sourceHabitForVersion.displayVersionNumber)")
+                            .font(.caption)
+                            .fontDesign(.rounded)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                VStack(spacing: 0) {
+                    versionContextRow(
+                        title: "Previous repeat",
+                        value: repeatTitle(for: sourceHabitForVersion)
+                    )
+
+                    Divider().opacity(0.28)
+
+                    versionContextRow(
+                        title: "Previous goal",
+                        value: goalTitle(for: sourceHabitForVersion)
+                    )
+                }
+            }
+            .padding()
+            .liquidGlassSurface(cornerRadius: 16)
+        }
+    }
+
     private var identitySection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Identity")
@@ -212,7 +355,7 @@ struct CreateHabitScreen: View {
                     endDate = newValue
                 }
             }
-            .disabled(isEditing)
+            .disabled(locksGoalAndSchedule)
             
             HStack(spacing: 8) {
                 ForEach(habitStore.orderedWeekdays, id: \.self) { weekday in
@@ -237,15 +380,14 @@ struct CreateHabitScreen: View {
                             .liquidGlassSurface(cornerRadius: 8, interactive: true)
                     }
                     .buttonStyle(.plain)
-                    .disabled(isEditing)
+                    .disabled(locksGoalAndSchedule)
                 }
             }
             
             if isEditing {
-                Text("Repeat settings are locked to keep existing statistics stable.")
-                    .font(.footnote)
-                    .fontDesign(.rounded)
-                    .foregroundStyle(.secondary)
+                lockedVersionPrompt(
+                    message: "Repeat settings are locked to keep existing statistics stable."
+                )
             }
         }
     }
@@ -323,18 +465,18 @@ struct CreateHabitScreen: View {
                     goalUnit = "times"
                 }
             }
-            .disabled(isEditing)
+            .disabled(locksGoalAndSchedule)
             
             if goalType == .count {
                 HStack(spacing: 12) {
                     TextField("Target", text: $goalCountText)
                         .keyboardType(.numberPad)
-                        .disabled(goalType == .todo || isEditing)
+                        .disabled(goalType == .todo || locksGoalAndSchedule)
                         .padding()
                         .liquidGlassSurface(cornerRadius: 12, interactive: true)
                     
                     TextField("Unit", text: $goalUnit)
-                        .disabled(isEditing)
+                        .disabled(locksGoalAndSchedule)
                         .padding()
                         .liquidGlassSurface(cornerRadius: 12, interactive: true)
                 }
@@ -342,12 +484,74 @@ struct CreateHabitScreen: View {
             }
             
             if isEditing {
-                Text("Goal settings are locked to keep completion history stable.")
-                    .font(.footnote)
-                    .fontDesign(.rounded)
-                    .foregroundStyle(.secondary)
+                lockedVersionPrompt(
+                    message: "Goal settings are locked to keep completion history stable."
+                )
             }
         }
+    }
+
+    private func lockedVersionPrompt(message: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(message)
+                .font(.footnote)
+                .fontDesign(.rounded)
+                .foregroundStyle(.secondary)
+
+            if let habitToEdit, onStartNewVersion != nil {
+                Button {
+                    onStartNewVersion?(habitToEdit)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(module: "arrow.triangle.2.circlepath")
+                            .font(.caption.weight(.semibold))
+
+                        Text("Start Version \(habitToEdit.displayVersionNumber + 1)")
+                            .font(.footnote.weight(.semibold))
+                            .fontDesign(.rounded)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 38)
+                    .contentShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                .liquidGlassSurface(cornerRadius: 10, interactive: true)
+            }
+        }
+    }
+
+    private func versionContextRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.caption)
+                .fontDesign(.rounded)
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 12)
+
+            Text(value)
+                .font(.caption)
+                .fontWeight(.semibold)
+                .fontDesign(.rounded)
+                .multilineTextAlignment(.trailing)
+        }
+        .frame(minHeight: 30)
+    }
+
+    private func repeatTitle(for habit: Habit) -> String {
+        switch habit.frequency {
+        case .daily:
+            "Daily"
+        case .weekday:
+            "Weekdays"
+        case .weekend:
+            "Weekends"
+        case .custom:
+            "Custom"
+        }
+    }
+
+    private func goalTitle(for habit: Habit) -> String {
+        habit.goalType == .todo ? "Complete once" : "\(habit.goalCount) \(habit.goalUnit)"
     }
     
     private var styleSection: some View {
@@ -480,8 +684,8 @@ struct CreateHabitScreen: View {
                 description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
                 icon: icon,
                 colorHex: colorHex,
-                startDate: startDate,
-                endDate: hasEndDate ? endDate : nil,
+                startDate: normalizedStartDate,
+                endDate: hasEndDate ? normalizedEndDate : nil,
                 frequency: habitToEdit.frequency,
                 targetDaysOfWeek: habitToEdit.targetDaysOfWeek,
                 goalType: habitToEdit.goalType,
@@ -489,14 +693,38 @@ struct CreateHabitScreen: View {
                 goalUnit: habitToEdit.goalUnit,
                 reminders: reminders
             )
+        } else if let sourceHabitForVersion {
+            let habit = Habit(
+                name: trimmedName,
+                description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
+                icon: icon,
+                colorHex: colorHex,
+                startDate: normalizedStartDate,
+                endDate: hasEndDate ? normalizedEndDate : nil,
+                frequency: frequency,
+                targetDaysOfWeek: Array(selectedDays).sorted(),
+                goalType: goalType,
+                goalCount: goalCount,
+                goalUnit: trimmedGoalUnit
+            )
+
+            if let savedHabit = habitStore.createHabitVersion(
+                replacing: sourceHabitForVersion,
+                with: habit,
+                reminders: reminders
+            ) {
+                onHabitSaved?(savedHabit)
+            } else {
+                return
+            }
         } else {
             let habit = Habit(
                 name: trimmedName,
                 description: habitDescription.trimmingCharacters(in: .whitespacesAndNewlines),
                 icon: icon,
                 colorHex: colorHex,
-                startDate: startDate,
-                endDate: hasEndDate ? endDate : nil,
+                startDate: normalizedStartDate,
+                endDate: hasEndDate ? normalizedEndDate : nil,
                 frequency: frequency,
                 targetDaysOfWeek: Array(selectedDays).sorted(),
                 goalType: goalType,

@@ -12,6 +12,13 @@ struct StatisticalScreen: View {
     @State private var statisticsScope: StatisticsScope = .month
     @State private var statisticsDate: Date = Date()
     @State private var title: String = "STATISTICAL"
+    @State private var hidesArchivedHabits = true
+
+    private var displayedHabits: [Habit] {
+        hidesArchivedHabits
+        ? habitStore.habits.filter { !$0.isArchived }
+        : habitStore.habits
+    }
 
     var body: some View {
         BaseScreen($title, backgroundType: .mint) {
@@ -20,6 +27,12 @@ struct StatisticalScreen: View {
                     "No Habits",
                     systemImage: "chart.bar.xaxis",
                     description: Text("Create a habit to view statistics.")
+                )
+            } else if displayedHabits.isEmpty {
+                ContentUnavailableView(
+                    "No Active Habits",
+                    systemImage: "archivebox",
+                    description: Text("Archived habits are hidden.")
                 )
             } else {
                 VStack(spacing: 14) {
@@ -32,7 +45,7 @@ struct StatisticalScreen: View {
 
                     AppScrollView {
                         LazyVStack(spacing: 14) {
-                            ForEach(habitStore.habits, id: \.id) { habit in
+                            ForEach(displayedHabits, id: \.id) { habit in
                                 StatisticsOverviewView(
                                     habit: habit,
                                     scope: statisticsScope,
@@ -47,6 +60,16 @@ struct StatisticalScreen: View {
         }
         .shadow(color: .primary.opacity(0.3), radius: 3)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    Haptic.selection()
+                    hidesArchivedHabits.toggle()
+                } label: {
+                    Image(module: hidesArchivedHabits ? "archivebox.fill" : "archivebox")
+                }
+                .accessibilityLabel(hidesArchivedHabits ? "Show archived habits" : "Hide archived habits")
+            }
+
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     Haptic.selection()
