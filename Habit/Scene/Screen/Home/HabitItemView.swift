@@ -96,6 +96,7 @@ struct HabitItemView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 25, height: 25)
+                    .shadow(color: .black.opacity(0.1), radius: 1)
                     .padding(8)
                     .background(
                         RoundedRectangle(cornerRadius: 4)
