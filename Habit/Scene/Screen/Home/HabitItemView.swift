@@ -23,6 +23,7 @@ struct HabitItemView: View {
     private let goalUnit: String
     private let completedCount: Int
     private let completionRatio: Double
+    private let isSkipped: Bool
     private let currentStreak: Int
     private let longestStreak: Int
     private let lastCompleteStreak: Date?
@@ -31,6 +32,22 @@ struct HabitItemView: View {
     // MARK: - UI State
     private let cornerRadius: CGFloat = 12.0
     @State private var showNumberPad = false
+
+    private var isCompleted: Bool {
+        completionRatio >= 1
+    }
+
+    private var statusText: String {
+        if isSkipped {
+            return "Skipped"
+        }
+
+        if goalType == .count {
+            return "\(completedCount)/\(goalCount) \(goalUnit)"
+        }
+
+        return "\(completedCount)/\(goalCount)"
+    }
 
     // MARK: - Callback
     var handleAction: ((Action) -> Void) = { _ in }
@@ -50,6 +67,7 @@ struct HabitItemView: View {
         self.goalUnit = habit.goalUnit
         self.completedCount = entry?.completedCount ?? 0
         self.completionRatio = entry?.completionRatio ?? 0
+        self.isSkipped = entry?.isSkipped ?? false
         self.handleAction = handleAction
         self.currentStreak = habit.currentStreak
         self.longestStreak = habit.longestStreak
@@ -91,10 +109,7 @@ struct HabitItemView: View {
                         .fontDesign(.rounded)
                         .foregroundStyle(.primary)
                     
-                    let isCompleted = completionRatio >= 1
-                    
-                    let result = goalType == .count ? "\(completedCount)/\(goalCount) \(goalUnit)" : "\(completedCount)/\(goalCount)"
-                    Text(result)
+                    Text(statusText)
                         .padding(.horizontal, 4)
                         .background(
                             RoundedRectangle(cornerRadius: 3)
@@ -104,7 +119,7 @@ struct HabitItemView: View {
                                         .stroke(Color.primary.opacity(0.20), lineWidth: 0.4)
                                 }
                         )
-                        .foregroundStyle(isCompleted ? Color.green : Color.secondary)
+                        .foregroundStyle(isSkipped ? Color.cyan : isCompleted ? Color.green : Color.secondary)
                         .font(.caption2)
                         .fontDesign(.rounded)
                         .fontWeight(.regular)
@@ -117,9 +132,20 @@ struct HabitItemView: View {
         }
         // MARK: - PLUS BUTTON
         .overlay(alignment: .trailing) {
-            let isCompleted =  completionRatio >= 1
             Group {
-                if isCompleted {
+                if isSkipped {
+                    VStack(spacing: 3) {
+                        Image(module: "airplane")
+                            .font(.title3)
+                            .foregroundStyle(.cyan)
+
+                        Text("Skipped")
+                            .font(.caption2)
+                            .fontWeight(.regular)
+                            .foregroundStyle(.primary)
+                    }
+                    .fontDesign(.rounded)
+                } else if isCompleted {
                     VStack {
                         HStack(spacing: 2) {
                             let dayUnit = currentStreak == 1 ? "day" : "days"
@@ -198,6 +224,7 @@ struct HabitItemView: View {
             Haptic.selection()
             handleAction(.tapped)
         }
+        .opacity(isSkipped ? 0.4 : 1)
     }
 }
 

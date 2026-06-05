@@ -96,6 +96,8 @@ private struct AggregateSummaryCard: View {
             VStack(spacing: 0) {
                 statisticRow(title: "Completed days", value: "\(summary.completedDays)/\(summary.scheduledDays)")
                 Divider().opacity(0.35)
+                statisticRow(title: "Skipped days", value: "\(summary.skippedDays)")
+                Divider().opacity(0.35)
                 statisticRow(title: "Completed count", value: "\(summary.totalCompletedCount)/\(summary.totalTargetCount)")
             }
         }
@@ -141,7 +143,9 @@ private struct AggregateWeekChart: View {
     }
 
     private func weekDayColumn(for date: Date) -> some View {
-        let progress = habitStore.statisticSummary(dates: [date]).progress
+        let summary = habitStore.statisticSummary(dates: [date])
+        let progress = summary.progress
+        let isSkippedOnly = summary.skippedDays > 0 && summary.scheduledDays == 0
 
         return VStack(spacing: 7) {
             Text(date.toString(withFormat: .dayNameSymbol))
@@ -149,15 +153,28 @@ private struct AggregateWeekChart: View {
                 .fontDesign(.rounded)
                 .foregroundStyle(.secondary)
 
-            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(Color.emeraldGreen)
-                .opacity(max(progress, 0.05))
-                .frame(height: 68)
-                .scaleEffect(y: max(progress, 0.04), anchor: .bottom)
-                .overlay {
+            Group {
+                if isSkippedOnly {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(Color.primary.opacity(0.1), lineWidth: 2)
+                        .fill(Color.cyan.opacity(0.14))
+                        .overlay {
+                            Image(module: "airplane")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.cyan)
+                        }
+                        .frame(height: 68)
+                } else {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(Color.emeraldGreen)
+                        .opacity(max(progress, 0.05))
+                        .frame(height: 68)
+                        .scaleEffect(y: max(progress, 0.04), anchor: .bottom)
                 }
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .stroke(Color.primary.opacity(0.1), lineWidth: 2)
+            }
 
             Text(date.toString(withFormat: .dayNo))
                 .font(.caption2)
@@ -213,17 +230,28 @@ private struct AggregateMonthChart: View {
     }
 
     private func dateCell(_ date: Date) -> some View {
-        let progress = habitStore.statisticSummary(dates: [date]).progress
+        let summary = habitStore.statisticSummary(dates: [date])
+        let progress = summary.progress
+        let isSkippedOnly = summary.skippedDays > 0 && summary.scheduledDays == 0
 
         return ZStack {
-            RoundedRectangle(cornerRadius: itemSpacing)
-                .fill(Color.emeraldGreen)
-                .opacity(max(progress, 0.05))
+            if isSkippedOnly {
+                RoundedRectangle(cornerRadius: itemSpacing)
+                    .fill(Color.cyan.opacity(0.14))
 
-            Text(date.toString(withFormat: .dayNo))
-                .font(.caption2.weight(.semibold))
-                .fontDesign(.rounded)
-                .foregroundStyle(.primary.opacity(progress > 0 ? 1 : 0.45))
+                Image(module: "airplane")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.cyan)
+            } else {
+                RoundedRectangle(cornerRadius: itemSpacing)
+                    .fill(Color.emeraldGreen)
+                    .opacity(max(progress, 0.05))
+
+                Text(date.toString(withFormat: .dayNo))
+                    .font(.caption2.weight(.semibold))
+                    .fontDesign(.rounded)
+                    .foregroundStyle(.primary.opacity(progress > 0 ? 1 : 0.45))
+            }
         }
         .aspectRatio(1, contentMode: .fit)
         .overlay {

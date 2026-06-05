@@ -35,8 +35,19 @@ struct HomeScreen: View {
                                 handleHabitItemAction(action, for: habit)
                             }
                             .padding(.horizontal)
-                            .swipeActions {
-                                if habitStore.canEditSelectedDateEntry {
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                let entry = habit.entry(for: habitStore.selectedDate)
+                                if entry?.isCompleted != true && entry?.isSkipped != true {
+                                    Button {
+                                        skipHabit(habit)
+                                    } label: {
+                                        Image(module: "airplane")
+                                            .tint(.cyan)
+                                    }
+                                }
+                            }
+                            .swipeActions(edge: .trailing) {
+                                if habitStore.canResetEntry(for: habit) {
                                     Button {
                                         resetHabit(habit)
                                     } label: {
@@ -100,6 +111,11 @@ struct HomeScreen: View {
     
     private func resetHabit(_ habit: Habit) {
         habitStore.resetHabitEntry(habit)
+    }
+
+    private func skipHabit(_ habit: Habit) {
+        Haptic.selection()
+        habitStore.skipHabitEntry(habit)
     }
     
     private func showHabitDetail(_ habit: Habit) {

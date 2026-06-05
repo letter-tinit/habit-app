@@ -112,6 +112,10 @@ extension HabitEntryBackupItem {
         guard completedCount >= 0 else {
             throw HabitBackupError.invalidData("The habit \"\(habitName)\" contains an entry with a negative completion count.")
         }
+
+        if status == .skipped && completedCount != 0 {
+            throw HabitBackupError.invalidData("The habit \"\(habitName)\" contains a skipped entry with completion progress.")
+        }
     }
 }
 
@@ -310,6 +314,7 @@ struct HabitEntryBackupItem: Codable {
     var id: UUID
     var date: Date
     var completedCount: Int
+    var status: HabitEntryStatus
     var note: String
     var mood: MoodRating?
     var createdAt: Date
@@ -319,10 +324,35 @@ struct HabitEntryBackupItem: Codable {
         id = entry.id
         date = entry.date
         completedCount = entry.completedCount
+        status = entry.status
         note = entry.note
         mood = entry.mood
         createdAt = entry.createdAt
         updatedAt = entry.updatedAt
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case date
+        case completedCount
+        case status
+        case note
+        case mood
+        case createdAt
+        case updatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decode(UUID.self, forKey: .id)
+        date = try container.decode(Date.self, forKey: .date)
+        completedCount = try container.decode(Int.self, forKey: .completedCount)
+        status = try container.decodeIfPresent(HabitEntryStatus.self, forKey: .status) ?? .active
+        note = try container.decode(String.self, forKey: .note)
+        mood = try container.decodeIfPresent(MoodRating.self, forKey: .mood)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
     }
 }
 

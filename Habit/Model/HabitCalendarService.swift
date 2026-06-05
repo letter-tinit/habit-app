@@ -95,6 +95,7 @@ struct HabitCalendarService {
 
         if let existing = try? context.fetch(descriptor).first {
             existing.completedCount = count
+            existing.status = .active
             existing.note = note
             existing.updatedAt = Date()
             return existing
@@ -121,12 +122,18 @@ struct HabitCalendarService {
             allEntries.filter { $0.isCompleted }
                       .map { AppCalendar.current.startOfDay(for: $0.date) }
         )
+        let skippedDates = Set(
+            allEntries.filter { $0.isSkipped }
+                      .map { AppCalendar.current.startOfDay(for: $0.date) }
+        )
 
         var streak = 0
         var checking = AppCalendar.current.startOfDay(for: Date())
 
-        while completedDates.contains(checking) {
-            streak += 1
+        while completedDates.contains(checking) || skippedDates.contains(checking) {
+            if completedDates.contains(checking) {
+                streak += 1
+            }
             checking = AppCalendar.current.date(byAdding: .day, value: -1, to: checking)!
         }
 

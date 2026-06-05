@@ -13,6 +13,7 @@ struct HabitStatisticSummary {
     let progress: Double
     let scheduledDays: Int
     let completedDays: Int
+    let skippedDays: Int
     let totalCompletedCount: Int
     let totalTargetCount: Int
 }
@@ -39,19 +40,19 @@ final class HabitStore {
         let scheduledHabits = habits.filter {
             shouldSchedule($0, on: targetDate, calendar: calendar)
         }
-        let completionByHabitID = Dictionary(
+        let closedByHabitID = Dictionary(
             uniqueKeysWithValues: scheduledHabits.map {
-                ($0.id, isComplete(for: $0, on: targetDate, calendar: calendar))
+                ($0.id, isClosed(for: $0, on: targetDate, calendar: calendar))
             }
         )
 
         return scheduledHabits
             .sorted { first, second in
-                let firstIsComplete = completionByHabitID[first.id] ?? false
-                let secondIsComplete = completionByHabitID[second.id] ?? false
+                let firstIsClosed = closedByHabitID[first.id] ?? false
+                let secondIsClosed = closedByHabitID[second.id] ?? false
 
-                if firstIsComplete != secondIsComplete {
-                    return !firstIsComplete
+                if firstIsClosed != secondIsClosed {
+                    return !firstIsClosed
                 }
 
                 return first.sortOrder < second.sortOrder
@@ -145,16 +146,23 @@ extension HabitStore {
                 )
             }
 
+            var activeHabitCount = 0
             let totalRatio = scheduledHabits.reduce(0.0) { result, habit in
                 guard habit.goalCount > 0 else {
                     return result
                 }
 
-                let completedCount = entriesByHabitID[habit.id]?[targetDate]?.completedCount ?? 0
+                let entry = entriesByHabitID[habit.id]?[targetDate]
+                guard entry?.isSkipped != true else {
+                    return result
+                }
+
+                activeHabitCount += 1
+                let completedCount = entry?.completedCount ?? 0
                 let ratio = min(Double(completedCount) / Double(habit.goalCount), 1.0)
                 return result + ratio
             }
-            let completionRatio = totalRatio / Double(scheduledHabits.count)
+            let completionRatio = activeHabitCount == 0 ? 1 : totalRatio / Double(activeHabitCount)
 
             return WeekDaySummary(
                 date: date,
@@ -607,6 +615,14 @@ extension HabitStore {
         !selectedDate.isFutureDay()
     }
 
+    func canResetEntry(for habit: Habit) -> Bool {
+        canEditSelectedDateEntry || habit.entry(for: selectedDate)?.isSkipped == true
+    }
+
+    func isSkipped(_ habit: Habit, on date: Date) -> Bool {
+        isSkipped(for: habit, on: date, calendar: AppCalendar.current)
+    }
+
     func updateHabitEntry(_ habit: Habit, completedCount: Int, note: String? = nil) {
         guard canEditSelectedDateEntry else {
             Haptic.warning()
@@ -619,11 +635,12 @@ extension HabitStore {
         if let existingEntry = habit.entries.first(where: {
             $0.date.isEqual(with: targetDate)
         }) {
-            guard existingEntry.completedCount != completedCount || note != nil else {
+            guard existingEntry.completedCount != completedCount || existingEntry.isSkipped || note != nil else {
                 return
             }
 
             existingEntry.completedCount = completedCount
+            existingEntry.status = .active
             if let note = note {
                 existingEntry.note = note
             }
@@ -643,8 +660,43 @@ extension HabitStore {
         _ = save()
     }
 
+    func skipHabitEntry(_ habit: Habit) {
+        let calendar = AppCalendar.current
+        let targetDate = calendar.startOfDay(for: selectedDate)
+
+        guard shouldSchedule(habit, on: targetDate, calendar: calendar) else {
+            Haptic.warning()
+            return
+        }
+
+        if let existingEntry = habit.entries.first(where: {
+            $0.date.isEqual(with: targetDate)
+        }) {
+            guard !existingEntry.isCompleted else {
+                Haptic.warning()
+                return
+            }
+
+            guard !existingEntry.isSkipped || existingEntry.completedCount != 0 else {
+                return
+            }
+
+            existingEntry.completedCount = 0
+            existingEntry.status = .skipped
+            existingEntry.updatedAt = Date()
+        } else {
+            let newEntry = HabitEntry(date: targetDate, status: .skipped)
+            newEntry.habit = habit
+            habit.entries.append(newEntry)
+            modelContext.insert(newEntry)
+        }
+
+        updateStreaks(for: habit)
+        _ = save()
+    }
+
     func resetHabitEntry(_ habit: Habit) {
-        guard canEditSelectedDateEntry else {
+        guard canResetEntry(for: habit) else {
             Haptic.warning()
             return
         }
@@ -655,11 +707,12 @@ extension HabitStore {
         if let existingEntry = habit.entries.first(where: {
             $0.date.isEqual(with: targetDate)
         }) {
-            guard existingEntry.completedCount != 0 else {
+            guard existingEntry.completedCount != 0 || existingEntry.isSkipped else {
                 return
             }
             Haptic.warning()
             existingEntry.completedCount = 0
+            existingEntry.status = .active
             existingEntry.updatedAt = Date()
         }
 
@@ -679,6 +732,12 @@ private extension HabitStore {
                 .map { calendar.startOfDay(for: $0.date) }
                 .filter { shouldSchedule(habit, on: $0, calendar: calendar) }
         )
+        let skippedDates = Set(
+            habit.entries
+                .filter { $0.isSkipped }
+                .map { calendar.startOfDay(for: $0.date) }
+                .filter { shouldSchedule(habit, on: $0, calendar: calendar) }
+        )
 
         guard let lastCompleted = completedDates.max() else {
             habit.currentStreak = 0
@@ -691,11 +750,13 @@ private extension HabitStore {
         habit.currentStreak = streakEnding(
             at: lastCompleted,
             completedDates: completedDates,
+            skippedDates: skippedDates,
             habit: habit,
             calendar: calendar
         )
         habit.longestStreak = longestStreak(
             completedDates: completedDates,
+            skippedDates: skippedDates,
             habit: habit,
             calendar: calendar
         )
@@ -725,6 +786,7 @@ private extension HabitStore {
 
     func longestStreak(
         completedDates: Set<Date>,
+        skippedDates: Set<Date>,
         habit: Habit,
         calendar: Calendar
     ) -> Int {
@@ -741,6 +803,7 @@ private extension HabitStore {
                 streakEnding(
                     at: date,
                     completedDates: completedDates,
+                    skippedDates: skippedDates,
                     habit: habit,
                     calendar: calendar
                 )
@@ -753,14 +816,17 @@ private extension HabitStore {
     func streakEnding(
         at date: Date,
         completedDates: Set<Date>,
+        skippedDates: Set<Date>,
         habit: Habit,
         calendar: Calendar
     ) -> Int {
         var streak = 0
         var checkDate = calendar.startOfDay(for: date)
 
-        while completedDates.contains(checkDate) {
-            streak += 1
+        while completedDates.contains(checkDate) || skippedDates.contains(checkDate) {
+            if completedDates.contains(checkDate) {
+                streak += 1
+            }
 
             guard let previousDate = previousScheduledDate(
                 before: checkDate,
@@ -868,6 +934,38 @@ private extension HabitStore {
         }
     }
 
+    func habitEntry(
+        for habit: Habit,
+        on targetDate: Date,
+        calendar: Calendar
+    ) -> HabitEntry? {
+        let targetDate = calendar.startOfDay(for: targetDate)
+        return habit.entries.first {
+            calendar.isDate($0.date, inSameDayAs: targetDate)
+        }
+    }
+
+    func isSkipped(
+        for habit: Habit,
+        on targetDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        guard shouldSchedule(habit, on: targetDate, calendar: calendar) else {
+            return false
+        }
+
+        return habitEntry(for: habit, on: targetDate, calendar: calendar)?.isSkipped ?? false
+    }
+
+    func isClosed(
+        for habit: Habit,
+        on targetDate: Date,
+        calendar: Calendar
+    ) -> Bool {
+        isComplete(for: habit, on: targetDate, calendar: calendar) ||
+        isSkipped(for: habit, on: targetDate, calendar: calendar)
+    }
+
     func isComplete(
         for habit: Habit,
         on targetDate: Date,
@@ -879,11 +977,7 @@ private extension HabitStore {
             return false
         }
 
-        let targetDate = calendar.startOfDay(for: targetDate)
-        let entry = habit.entries.first {
-            calendar.isDate($0.date, inSameDayAs: targetDate)
-        }
-        return entry?.isCompleted ?? false
+        return habitEntry(for: habit, on: targetDate, calendar: calendar)?.isCompleted ?? false
     }
 
     func completionRatio(
@@ -900,17 +994,24 @@ private extension HabitStore {
             return 0
         }
 
+        var activeHabitCount = 0
         let totalRatio = scheduledHabits.reduce(0.0) { result, habit in
             guard habit.goalCount > 0 else {
                 return result
             }
 
-            let completedCount = entriesByHabitID[habit.id]?[targetDate]?.completedCount ?? 0
+            let entry = entriesByHabitID[habit.id]?[targetDate]
+            guard entry?.isSkipped != true else {
+                return result
+            }
+
+            activeHabitCount += 1
+            let completedCount = entry?.completedCount ?? 0
             let ratio = min(Double(completedCount) / Double(habit.goalCount), 1.0)
             return result + ratio
         }
 
-        return totalRatio / Double(scheduledHabits.count)
+        return activeHabitCount == 0 ? 1 : totalRatio / Double(activeHabitCount)
     }
 }
 
@@ -1072,6 +1173,7 @@ private extension HabitStore {
             let entry = HabitEntry(
                 date: backup.date,
                 completedCount: backup.completedCount,
+                status: backup.status,
                 note: backup.note
             )
 
@@ -1125,22 +1227,25 @@ extension HabitStore {
             return 0
         }
 
+        var activeHabitCount = 0
         let totalRatio = scheduledHabits.reduce(0.0) { result, habit in
-            let entry = habit.entries.first {
-                calendar.isDate($0.date, inSameDayAs: targetDate)
-            }
-
             guard habit.goalCount > 0 else {
                 return result
             }
 
+            let entry = habitEntry(for: habit, on: targetDate, calendar: calendar)
+            guard entry?.isSkipped != true else {
+                return result
+            }
+
+            activeHabitCount += 1
             let completedCount = entry?.completedCount ?? 0
             let ratio = min(Double(completedCount) / Double(habit.goalCount), 1.0)
 
             return result + ratio
         }
 
-        return totalRatio / Double(scheduledHabits.count)
+        return activeHabitCount == 0 ? 1 : totalRatio / Double(activeHabitCount)
     }
 
     func completionRatio(for habit: Habit, on date: Date) -> Double {
@@ -1153,8 +1258,9 @@ extension HabitStore {
             return 0
         }
 
-        let entry = habit.entries.first {
-            calendar.isDate($0.date, inSameDayAs: targetDate)
+        let entry = habitEntry(for: habit, on: targetDate, calendar: calendar)
+        if entry?.isSkipped == true {
+            return 1
         }
         let completedCount = entry?.completedCount ?? 0
 
@@ -1173,22 +1279,25 @@ extension HabitStore {
             return false
         }
 
+        var activeHabitCount = 0
         let totalRatio = scheduledHabits.reduce(0.0) { result, habit in
-            let entry = habit.entries.first {
-                calendar.isDate($0.date, inSameDayAs: targetDate)
-            }
-
             guard habit.goalCount > 0 else {
                 return result
             }
 
+            let entry = habitEntry(for: habit, on: targetDate, calendar: calendar)
+            guard entry?.isSkipped != true else {
+                return result
+            }
+
+            activeHabitCount += 1
             let completedCount = entry?.completedCount ?? 0
             let ratio = min(Double(completedCount) / Double(habit.goalCount), 1.0)
 
             return result + ratio
         }
 
-        let ratio = totalRatio / Double(scheduledHabits.count)
+        let ratio = activeHabitCount == 0 ? 1 : totalRatio / Double(activeHabitCount)
 
         return ratio == 1.0
     }
@@ -1203,10 +1312,7 @@ extension HabitStore {
             return false
         }
 
-        let entry = habit.entries.first {
-            calendar.isDate($0.date, inSameDayAs: targetDate)
-        }
-        return entry?.isCompleted ?? false
+        return habitEntry(for: habit, on: targetDate, calendar: calendar)?.isCompleted ?? false
     }
 
     func completionRatioForMonth(containing date: Date) -> Double {
@@ -1332,7 +1438,8 @@ private extension HabitStore {
         )
         let validDates = targetDates.filter { date in
             habits.contains {
-                shouldSchedule($0, on: date, calendar: calendar)
+                shouldSchedule($0, on: date, calendar: calendar) &&
+                entriesByHabitID[$0.id]?[date]?.isSkipped != true
             }
         }
 
@@ -1359,7 +1466,8 @@ private extension HabitStore {
             result[entryDate] = entry
         }
         let validDates = targetDates.filter {
-            shouldSchedule(habit, on: $0, calendar: calendar)
+            shouldSchedule(habit, on: $0, calendar: calendar) &&
+            entriesByDate[$0]?.isSkipped != true
         }
 
         guard !validDates.isEmpty else {
@@ -1390,6 +1498,7 @@ private extension HabitStore {
                 progress: 0,
                 scheduledDays: 0,
                 completedDays: 0,
+                skippedDays: 0,
                 totalCompletedCount: 0,
                 totalTargetCount: 0
             )
@@ -1405,25 +1514,32 @@ private extension HabitStore {
             }
             result[entryDay] = entry
         }
+        let skippedDates = scheduledDates.filter {
+            entriesByDate[$0]?.isSkipped == true
+        }
+        let activeScheduledDates = scheduledDates.filter {
+            entriesByDate[$0]?.isSkipped != true
+        }
 
-        let completedCount = scheduledDates.reduce(0) { result, date in
+        let completedCount = activeScheduledDates.reduce(0) { result, date in
             result + min(entriesByDate[date]?.completedCount ?? 0, habit.goalCount)
         }
-        let completedDays = scheduledDates.filter { date in
+        let completedDays = activeScheduledDates.filter { date in
             guard habit.goalCount > 0 else {
                 return false
             }
             return (entriesByDate[date]?.completedCount ?? 0) >= habit.goalCount
         }.count
-        let targetCount = scheduledDates.count * habit.goalCount
+        let targetCount = activeScheduledDates.count * habit.goalCount
         let progress = targetCount == 0
         ? 0
         : Double(completedCount) / Double(targetCount)
 
         return HabitStatisticSummary(
             progress: min(progress, 1),
-            scheduledDays: scheduledDates.count,
+            scheduledDays: activeScheduledDates.count,
             completedDays: completedDays,
+            skippedDays: skippedDates.count,
             totalCompletedCount: completedCount,
             totalTargetCount: targetCount
         )
@@ -1438,6 +1554,7 @@ private extension HabitStore {
         )
         var scheduledDayCount = 0
         var completedDayCount = 0
+        var skippedDayCount = 0
         var totalCompletedCount = 0
         var totalTargetCount = 0
         var totalProgressRatio = 0.0
@@ -1452,10 +1569,27 @@ private extension HabitStore {
                 continue
             }
 
+            var hasSkippedHabit = false
+            let activeScheduledHabits = scheduledHabits.filter { habit in
+                let isSkipped = entriesByHabitID[habit.id]?[date]?.isSkipped == true
+                if isSkipped {
+                    hasSkippedHabit = true
+                }
+                return !isSkipped
+            }
+
+            if hasSkippedHabit {
+                skippedDayCount += 1
+            }
+
+            guard !activeScheduledHabits.isEmpty else {
+                continue
+            }
+
             scheduledDayCount += 1
 
             var isDateComplete = true
-            for habit in scheduledHabits {
+            for habit in activeScheduledHabits {
                 let entry = entriesByHabitID[habit.id]?[date]
                 let completedCount = min(entry?.completedCount ?? 0, habit.goalCount)
                 let targetCount = habit.goalCount
@@ -1484,6 +1618,7 @@ private extension HabitStore {
             progress: progress,
             scheduledDays: scheduledDayCount,
             completedDays: completedDayCount,
+            skippedDays: skippedDayCount,
             totalCompletedCount: totalCompletedCount,
             totalTargetCount: totalTargetCount
         )

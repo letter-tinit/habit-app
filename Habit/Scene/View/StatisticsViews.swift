@@ -293,6 +293,10 @@ struct StatisticSummaryTable: View {
         "\(summary.completedDays)/\(summary.scheduledDays)"
     }
 
+    private var skippedDaysText: String {
+        "\(summary.skippedDays)"
+    }
+
     private var totalProgressText: String {
         if habit.goalType == .count {
             "\(summary.totalCompletedCount)/\(summary.totalTargetCount) \(habit.goalUnit)"
@@ -308,6 +312,10 @@ struct StatisticSummaryTable: View {
             Divider().opacity(0.35)
 
             statisticRow(title: "Completed days", value: completedDaysText)
+
+            Divider().opacity(0.35)
+
+            statisticRow(title: "Skipped days", value: skippedDaysText)
 
             Divider().opacity(0.35)
 
@@ -398,6 +406,7 @@ struct WeeklyStatisticsView: View {
 
     private func weekDayColumn(for day: Date) -> some View {
         let isScheduled = habitStore.isScheduled(habit, on: day)
+        let isSkipped = habitStore.isSkipped(habit, on: day)
         let progress = habitStore.completionRatio(for: habit, on: day)
         let displayHeight = 68.0
 
@@ -410,9 +419,19 @@ struct WeeklyStatisticsView: View {
 
             Group {
                 if isScheduled {
-                    RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .fill(habit.gradient)
-                        .opacity(progress)
+                    if isSkipped {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(Color.cyan.opacity(0.14))
+                            .overlay {
+                                Image(module: "airplane")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.cyan)
+                            }
+                    } else {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(habit.gradient)
+                            .opacity(progress)
+                    }
                 } else {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
                         .fill(Color.primary.opacity(0.025))
@@ -488,11 +507,21 @@ struct MonthlyStatisticsView: View {
                     if let date {
                         let progress = habitStore.completionRatio(for: habit, on: date)
                         let isScheduled = habitStore.isScheduled(habit, on: date)
+                        let isSkipped = habitStore.isSkipped(habit, on: date)
                         ZStack(alignment: .center) {
                             Group {
                                 if isScheduled {
-                                    habit.gradient
-                                        .opacity(progress)
+                                    if isSkipped {
+                                        Color.cyan.opacity(0.14)
+                                            .overlay {
+                                                Image(module: "airplane")
+                                                    .font(.system(size: 10, weight: .semibold))
+                                                    .foregroundStyle(.cyan)
+                                            }
+                                    } else {
+                                        habit.gradient
+                                            .opacity(progress)
+                                    }
                                 } else {
                                     Color.primary.opacity(0.025)
                                         .overlay {
@@ -511,7 +540,7 @@ struct MonthlyStatisticsView: View {
                                 .font(.caption2)
                                 .fontWeight(.semibold)
                                 .fontDesign(.rounded)
-                                .foregroundStyle(.primary.opacity(progress))
+                                .foregroundStyle(.primary.opacity(isSkipped ? 0 : progress))
                                 .opacity(isScheduled ? 1 : 0)
                         }
                         .overlay {
@@ -638,12 +667,18 @@ struct YearlyStatisticsView: View {
         let isCurrentYear = calendar.isDate(date, equalTo: self.date, toGranularity: .year)
         let progress = habitStore.completionRatio(for: habit, on: date)
         let isScheduled = habitStore.isScheduled(habit, on: date)
+        let isSkipped = habitStore.isSkipped(habit, on: date)
 
         return Group {
             if isScheduled {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(habit.gradient)
-                    .opacity(progress)
+                if isSkipped {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.cyan.opacity(0.45))
+                } else {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(habit.gradient)
+                        .opacity(progress)
+                }
             } else {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color.primary.opacity(0.025))
