@@ -67,6 +67,16 @@ extension HabitBackupItem {
             throw HabitBackupError.invalidData("The habit \"\(name)\" has invalid scheduled days.")
         }
 
+        if let versionNumber {
+            guard versionNumber > 0 else {
+                throw HabitBackupError.invalidData("The habit \"\(name)\" has an invalid version number.")
+            }
+        }
+
+        if replacedHabitID == id {
+            throw HabitBackupError.invalidData("The habit \"\(name)\" cannot replace itself.")
+        }
+
         if let endDate {
             let calendar = AppCalendar.current
             let startDay = calendar.startOfDay(for: effectiveStartDate)
@@ -191,6 +201,9 @@ struct HabitBackupItem: Codable {
     var createdAt: Date
     var archivedAt: Date?
     var sortOrder: Int
+    var seriesID: UUID?
+    var replacedHabitID: UUID?
+    var versionNumber: Int?
     var startDate: Date?
     var endDate: Date?
     var frequency: HabitFrequency
@@ -214,6 +227,9 @@ struct HabitBackupItem: Codable {
         createdAt = habit.createdAt
         archivedAt = habit.archivedAt
         sortOrder = habit.sortOrder
+        seriesID = habit.effectiveSeriesID
+        replacedHabitID = habit.replacedHabitID
+        versionNumber = habit.displayVersionNumber
         startDate = habit.effectiveStartDate
         endDate = habit.endDate
         frequency = habit.frequency
@@ -238,6 +254,9 @@ struct HabitBackupItem: Codable {
         case createdAt
         case archivedAt
         case sortOrder
+        case seriesID
+        case replacedHabitID
+        case versionNumber
         case startDate
         case endDate
         case frequency
@@ -264,6 +283,9 @@ struct HabitBackupItem: Codable {
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         archivedAt = try container.decodeIfPresent(Date.self, forKey: .archivedAt)
         sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
+        seriesID = try container.decodeIfPresent(UUID.self, forKey: .seriesID)
+        replacedHabitID = try container.decodeIfPresent(UUID.self, forKey: .replacedHabitID)
+        versionNumber = try container.decodeIfPresent(Int.self, forKey: .versionNumber)
         startDate = try container.decodeIfPresent(Date.self, forKey: .startDate)
         endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
         frequency = try container.decode(HabitFrequency.self, forKey: .frequency)
